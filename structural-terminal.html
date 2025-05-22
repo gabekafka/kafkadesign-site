@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Structural Terminal</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #00ff9f;
+      font-family: monospace;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .terminal {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    input {
+      background: transparent;
+      border: none;
+      color: #00ff9f;
+      font-family: monospace;
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+    }
+
+    .prompt {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="prompt">
+      <span>&gt;</span>
+      <input id="terminalInput" type="text" placeholder="Type a command..." autofocus />
+    </div>
+    <div id="terminalOutput" style="margin-top: 1rem;"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  const input = document.getElementById('terminalInput');
+  const outputDiv = document.getElementById('terminalOutput');
+  let wShapeData = {};
+
+  // Load and parse CSV using PapaParse
+  Papa.parse('assets/data/w-member-data.csv', {
+    download: true,
+    header: true,
+    complete: function(results) {
+      const rows = results.data;
+      const nameKey = Object.keys(rows[0]).find(k => k.trim().toUpperCase() === "NAME");
+
+      wShapeData = Object.fromEntries(
+        rows.map(row => [
+          row[nameKey]?.trim().toUpperCase(),
+          row
+        ])
+      );
+
+      console.log("Loaded W-shapes:", Object.keys(wShapeData));
+    }
+  });
+
+  // Focus input on backtick (`) press
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '`') {
+      e.preventDefault();
+      input.focus();
+    }
+  });
+
+  // Respond to Enter key with lookup
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const command = input.value.trim().toUpperCase();
+      input.value = '';
+
+      outputDiv.innerHTML += `<div>&gt; ${command}</div>`;
+
+      const result = wShapeData[command];
+      if (result) {
+        for (const [key, value] of Object.entries(result)) {
+          outputDiv.innerHTML += `<div>${key.trim()}: ${value}</div>`;
+        }
+      } else {
+        outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+      }
+
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+  });
+</script>
+</body>
+</html>
