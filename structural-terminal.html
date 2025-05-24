@@ -32,6 +32,26 @@
       gap: 0.5rem;
       align-items: center;
     }
+
+    /* Add styles for autocomplete suggestions */
+    .suggestions {
+      position: absolute;
+      background: #1e1e1e;
+      border: 1px solid #00ff9f;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .suggestion-item {
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background: #2a2a2a;
+    }
   </style>
 </head>
 <body>
@@ -44,58 +64,131 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script>
-  const input = document.getElementById('terminalInput');
-  const outputDiv = document.getElementById('terminalOutput');
-  let wShapeData = {};
+  <script>
+    const input = document.getElementById('terminalInput');
+    const outputDiv = document.getElementById('terminalOutput');
+    let wShapeData = {};
+    let suggestionsDiv = null;
 
-  // Load and parse CSV using PapaParse
-  Papa.parse('assets/data/w-member-data.csv', {
-    download: true,
-    header: true,
-    complete: function(results) {
-      const rows = results.data;
-      const nameKey = Object.keys(rows[0]).find(k => k.trim().toUpperCase() === "NAME");
+    // Load and parse CSV using PapaParse
+    Papa.parse('assets/data/w-member-data.csv', {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const rows = results.data;
+        const nameKey = Object.keys(rows[0]).find(k => k.trim().toUpperCase() === "NAME");
 
-      wShapeData = Object.fromEntries(
-        rows.map(row => [
-          row[nameKey]?.trim().toUpperCase(),
-          row
-        ])
-      );
+        wShapeData = Object.fromEntries(
+          rows.map(row => [
+            row[nameKey]?.trim().toUpperCase(),
+            row
+          ])
+        );
 
-      console.log("Loaded W-shapes:", Object.keys(wShapeData));
+        console.log("Loaded W-shapes:", Object.keys(wShapeData));
+      }
+    });
+
+    // Create suggestions div
+    function createSuggestionsDiv() {
+      if (!suggestionsDiv) {
+        suggestionsDiv = document.createElement('div');
+        suggestionsDiv.className = 'suggestions';
+        suggestionsDiv.style.display = 'none';
+        document.querySelector('.terminal').appendChild(suggestionsDiv);
+      }
     }
-  });
 
-  // Focus input on backtick (`) press
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '`') {
-      e.preventDefault();
-      input.focus();
-    }
-  });
-
-  // Respond to Enter key with lookup
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const command = input.value.trim().toUpperCase();
-      input.value = '';
-
-      outputDiv.innerHTML += `<div>&gt; ${command}</div>`;
-
-      const result = wShapeData[command];
-      if (result) {
-        for (const [key, value] of Object.entries(result)) {
-          outputDiv.innerHTML += `<div>${key.trim()}: ${value}</div>`;
-        }
-      } else {
-        outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+    // Show suggestions based on input
+    function showSuggestions(inputValue) {
+      if (!inputValue) {
+        suggestionsDiv.style.display = 'none';
+        return;
       }
 
-      outputDiv.scrollTop = outputDiv.scrollHeight;
+      const matches = Object.keys(wShapeData).filter(key => 
+        key.startsWith(inputValue.toUpperCase())
+      );
+
+      if (matches.length > 0) {
+        suggestionsDiv.innerHTML = matches
+          .map(match => `<div class="suggestion-item">${match}</div>`)
+          .join('');
+        suggestionsDiv.style.display = 'block';
+      } else {
+        suggestionsDiv.style.display = 'none';
+      }
     }
-  });
-</script>
+
+    // Handle suggestion click
+    function handleSuggestionClick(suggestion) {
+      input.value = suggestion;
+      suggestionsDiv.style.display = 'none';
+      input.focus();
+    }
+
+    // Focus input on backtick (`) press
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '`') {
+        e.preventDefault();
+        input.focus();
+      }
+    });
+
+    // Handle input changes
+    input.addEventListener('input', (e) => {
+      createSuggestionsDiv();
+      showSuggestions(e.target.value);
+    });
+
+    // Handle suggestion clicks
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('suggestion-item')) {
+        handleSuggestionClick(e.target.textContent);
+      } else if (!e.target.closest('.suggestions')) {
+        suggestionsDiv.style.display = 'none';
+      }
+    });
+
+    // Handle keyboard navigation
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = suggestionsDiv.getElementsByClassName('suggestion-item');
+        const currentIndex = Array.from(items).findIndex(item => 
+          item.textContent === input.value
+        );
+
+        if (items.length > 0) {
+          let newIndex;
+          if (e.key === 'ArrowDown') {
+            newIndex = (currentIndex + 1) % items.length;
+          } else {
+            newIndex = (currentIndex - 1 + items.length) % items.length;
+          }
+          input.value = items[newIndex].textContent;
+        }
+      } else if (e.key === 'Enter') {
+        const command = input.value.trim().toUpperCase();
+        input.value = '';
+
+        outputDiv.innerHTML += `<div>&gt; ${command}</div>`;
+
+        const result = wShapeData[command];
+        if (result) {
+          for (const [key, value] of Object.entries(result)) {
+            outputDiv.innerHTML += `<div>${key.trim()}: ${value}</div>`;
+          }
+        } else {
+          outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+        }
+
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+        suggestionsDiv.style.display = 'none';
+      } else if (e.key === 'Escape') {
+        suggestionsDiv.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
