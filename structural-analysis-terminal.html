@@ -154,7 +154,7 @@
                 { type: 'numeric', format: '0.000' },
                 { 
                     type: 'dropdown',
-                    source: ['Fixed', 'Free', 'Pinned', 'Roller']
+                    source: ['Free', 'Pinned', 'Fixed', 'Roller']
                 }
             ],
             height: 300,
@@ -359,6 +359,31 @@
             return sprite;
         }
 
+        // Add these support geometry creation functions after the createAxisLabel function
+        function createSupportGeometry(fixityType, size = 0.5) {
+            let geometry;
+            
+            switch(fixityType.toLowerCase()) {
+                case 'pinned':
+                    // Create a triangle for pinned support
+                    geometry = new THREE.ConeGeometry(size, size, 3);
+                    break;
+                case 'fixed':
+                    // Create a cube for fixed support
+                    geometry = new THREE.BoxGeometry(size, size, size);
+                    break;
+                case 'roller':
+                    // Create a cylinder for roller support
+                    geometry = new THREE.CylinderGeometry(size/2, size/2, size, 32);
+                    break;
+                default:
+                    // For 'free' or any other type, return null
+                    return null;
+            }
+            
+            return geometry;
+        }
+
         function updateVisualization() {
             document.getElementById('loadingIndicator').style.display = 'block';
             
@@ -369,16 +394,37 @@
                 nodes = [];
                 lines = [];
 
-                // Add nodes
+                // Add nodes and supports
                 const nodeGeometry = new THREE.SphereGeometry(0.2);
                 const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff9f });
 
                 nodesData.forEach((node, index) => {
+                    // Add node
                     const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
-                    // Use coordinates as is (X, Y, Z)
                     nodeMesh.position.set(node[1], node[2], node[3]);
                     scene.add(nodeMesh);
                     nodes.push(nodeMesh);
+
+                    // Add support if not free
+                    const supportGeometry = createSupportGeometry(node[4]);
+                    if (supportGeometry) {
+                        const supportMaterial = new THREE.MeshBasicMaterial({ 
+                            color: 0xff0000,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        const support = new THREE.Mesh(supportGeometry, supportMaterial);
+                        
+                        // Position support below the node
+                        support.position.set(node[1], node[2], node[3]);
+                        support.position.y -= 0.5; // Move support below the node
+                        
+                        // Rotate support to point upward
+                        support.rotation.x = Math.PI / 2;
+                        
+                        scene.add(support);
+                        nodes.push(support);
+                    }
 
                     // Add node label
                     const canvas = document.createElement('canvas');
@@ -394,7 +440,6 @@
                     const texture = new THREE.CanvasTexture(canvas);
                     const labelMaterial = new THREE.SpriteMaterial({ map: texture });
                     const label = new THREE.Sprite(labelMaterial);
-                    // Update label position
                     label.position.set(node[1], node[2] + 0.5, node[3]);
                     label.scale.set(2, 0.5, 1);
                     scene.add(label);
@@ -410,7 +455,6 @@
                     
                     if (startNode && endNode) {
                         const points = [];
-                        // Use coordinates as is (X, Y, Z)
                         points.push(new THREE.Vector3(startNode[1], startNode[2], startNode[3]));
                         points.push(new THREE.Vector3(endNode[1], endNode[2], endNode[3]));
                         
