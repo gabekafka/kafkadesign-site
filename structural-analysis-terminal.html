@@ -272,16 +272,56 @@
                            document.getElementById('visualization').clientHeight);
             document.getElementById('visualization').appendChild(renderer.domElement);
 
-            // Add grid (now in XY plane)
+            // Add grid (in XY plane)
             const gridHelper = new THREE.GridHelper(20, 20);
-            // No rotation needed as grid is already in XY plane
             scene.add(gridHelper);
 
-            // Add axes
-            const axesHelper = new THREE.AxesHelper(5);
-            scene.add(axesHelper);
+            // Add enhanced axes with labels
+            const axesLength = 10;
+            const axesWidth = 0.1;
+            
+            // X-axis (red)
+            const xAxisGeometry = new THREE.CylinderGeometry(axesWidth, axesWidth, axesLength, 32);
+            const xAxisMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const xAxis = new THREE.Mesh(xAxisGeometry, xAxisMaterial);
+            xAxis.rotation.z = Math.PI / 2;
+            xAxis.position.x = axesLength / 2;
+            scene.add(xAxis);
 
-            // Update camera position for better view of XY plane
+            // Y-axis (green)
+            const yAxisGeometry = new THREE.CylinderGeometry(axesWidth, axesWidth, axesLength, 32);
+            const yAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const yAxis = new THREE.Mesh(yAxisGeometry, yAxisMaterial);
+            yAxis.position.y = axesLength / 2;
+            scene.add(yAxis);
+
+            // Z-axis (blue)
+            const zAxisGeometry = new THREE.CylinderGeometry(axesWidth, axesWidth, axesLength, 32);
+            const zAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            const zAxis = new THREE.Mesh(zAxisGeometry, zAxisMaterial);
+            zAxis.rotation.x = Math.PI / 2;
+            zAxis.position.z = axesLength / 2;
+            scene.add(zAxis);
+
+            // Add axis labels
+            const labelDistance = axesLength + 1;
+            
+            // X label
+            const xLabel = createAxisLabel('X', 0xff0000);
+            xLabel.position.set(labelDistance, 0, 0);
+            scene.add(xLabel);
+
+            // Y label
+            const yLabel = createAxisLabel('Y', 0x00ff00);
+            yLabel.position.set(0, labelDistance, 0);
+            scene.add(yLabel);
+
+            // Z label
+            const zLabel = createAxisLabel('Z', 0x0000ff);
+            zLabel.position.set(0, 0, labelDistance);
+            scene.add(zLabel);
+
+            // Update camera position for better view
             camera.position.set(15, 15, 15);
             camera.lookAt(0, 0, 0);
 
@@ -291,6 +331,32 @@
             controls.dampingFactor = 0.05;
 
             animate();
+        }
+
+        // Helper function to create axis labels
+        function createAxisLabel(text, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 64;
+            canvas.height = 64;
+            
+            // Clear canvas
+            context.fillStyle = '#1e1e1e';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw text
+            context.font = 'bold 48px Arial';
+            context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width/2, canvas.height/2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(2, 2, 1);
+            
+            return sprite;
         }
 
         function updateVisualization() {
