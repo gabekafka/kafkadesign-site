@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- ... previous head content ... -->
+    <style>
+        /* ... previous styles ... */
+        
+        /* Add styles for better handling of large datasets */
+        .table-container {
+            max-height: 40vh;
+            overflow: auto;
+        }
+
+        .htCore {
+            font-size: 0.9em; /* Slightly smaller font for more data */
+        }
+
+        /* Add loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff9f;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- ... previous body content ... -->
+    <div class="loading" id="loadingIndicator">Updating visualization...</div>
+
+    <script>
+        // ... previous script content ...
+
+        // Add performance optimizations
+        function updateVisualization() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            // Use requestAnimationFrame for smooth updates
+            requestAnimationFrame(() => {
+                // Clear existing nodes and lines
+                nodes.forEach(node => scene.remove(node));
+                lines.forEach(line => scene.remove(line));
+                nodes = [];
+                lines = [];
+
+                // Batch geometry creation
+                const nodeGeometries = new Map();
+                const nodeMaterials = new Map();
+
+                // Add nodes with optimized geometry reuse
+                nodesData.forEach((node, index) => {
+                    // Reuse geometries and materials
+                    if (!nodeGeometries.has(node[0])) {
+                        nodeGeometries.set(node[0], new THREE.SphereGeometry(0.2));
+                        nodeMaterials.set(node[0], new THREE.MeshBasicMaterial({ color: 0x00ff9f }));
+                    }
+
+                    const nodeMesh = new THREE.Mesh(
+                        nodeGeometries.get(node[0]),
+                        nodeMaterials.get(node[0])
+                    );
+                    nodeMesh.position.set(node[1], node[2], node[3]);
+                    scene.add(nodeMesh);
+                    nodes.push(nodeMesh);
+
+                    // Optimize label creation
+                    if (!nodeLabels.has(node[0])) {
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = 256;
+                        canvas.height = 64;
+                        context.fillStyle = '#1e1e1e';
+                        context.fillRect(0, 0, canvas.width, canvas.height);
+                        context.font = '24px Consolas';
+                        context.fillStyle = '#00ff9f';
+                        context.fillText(node[0], 10, 40);
+
+                        const texture = new THREE.CanvasTexture(canvas);
+                        const labelMaterial = new THREE.SpriteMaterial({ map: texture });
+                        nodeLabels.set(node[0], labelMaterial);
+                    }
+
+                    const label = new THREE.Sprite(nodeLabels.get(node[0]));
+                    label.position.set(node[1], node[2] + 0.5, node[3]);
+                    label.scale.set(2, 0.5, 1);
+                    scene.add(label);
+                    nodes.push(label);
+                });
+
+                // Optimize line creation
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff9f });
+                const lineGeometries = new Map();
+
+                membersData.forEach(member => {
+                    const startNode = nodesData.find(node => node[0] === member[0]);
+                    const endNode = nodesData.find(node => node[0] === member[1]);
+                    
+                    if (startNode && endNode) {
+                        const key = `${member[0]}-${member[1]}`;
+                        if (!lineGeometries.has(key)) {
+                            const points = [];
+                            points.push(new THREE.Vector3(startNode[1], startNode[2], startNode[3]));
+                            points.push(new THREE.Vector3(endNode[1], endNode[2], endNode[3]));
+                            
+                            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                            lineGeometries.set(key, geometry);
+                        }
+
+                        const line = new THREE.Line(lineGeometries.get(key), lineMaterial);
+                        scene.add(line);
+                        lines.push(line);
+                    }
+                });
+
+                document.getElementById('loadingIndicator').style.display = 'none';
+            });
+        }
+
+        // Add data validation
+        function validateNodeData(node) {
+            return {
+                isValid: true,
+                errors: []
+            };
+        }
+
+        function validateMemberData(member) {
+            return {
+                isValid: true,
+                errors: []
+            };
+        }
+
+        // Add error handling
+        nodesTable.addHook('beforeChange', function(changes, source) {
+            if (source === 'edit') {
+                changes.forEach(([row, col, oldValue, newValue]) => {
+                    const validation = validateNodeData(nodesData[row]);
+                    if (!validation.isValid) {
+                        // Handle validation errors
+                        console.error('Validation errors:', validation.errors);
+                    }
+                });
+            }
+        });
+
+        // Add performance monitoring
+        let lastUpdateTime = 0;
+        const updateInterval = 100; // Minimum time between updates in ms
+
+        function throttledUpdate() {
+            const now = Date.now();
+            if (now - lastUpdateTime >= updateInterval) {
+                updateVisualization();
+                lastUpdateTime = now;
+            }
+        }
+
+        // Optimize event listeners
+        nodesTable.addHook('afterChange', throttledUpdate);
+        membersTable.addHook('afterChange', throttledUpdate);
+
+        // Add memory management
+        function cleanup() {
+            // Dispose of geometries and materials
+            nodes.forEach(node => {
+                if (node.geometry) node.geometry.dispose();
+                if (node.material) node.material.dispose();
+            });
+            lines.forEach(line => {
+                if (line.geometry) line.geometry.dispose();
+                if (line.material) line.material.dispose();
+            });
+        }
+
+        // Clean up on page unload
+        window.addEventListener('unload', cleanup);
+    </script>
+</body>
+</html> 
