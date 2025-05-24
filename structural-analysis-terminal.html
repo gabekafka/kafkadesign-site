@@ -361,9 +361,17 @@
 
         // Add these support geometry creation functions after the createAxisLabel function
         function createSupportGeometry(fixityType, size = 0.5) {
+            // Add null check and default to 'free' if fixityType is null/undefined
+            if (!fixityType) {
+                return null;
+            }
+
+            // Convert to lowercase and trim any whitespace
+            const fixity = fixityType.toString().toLowerCase().trim();
+            
             let geometry;
             
-            switch(fixityType.toLowerCase()) {
+            switch(fixity) {
                 case 'pinned':
                     // Create a triangle for pinned support
                     geometry = new THREE.ConeGeometry(size, size, 3);
@@ -376,6 +384,7 @@
                     // Create a cylinder for roller support
                     geometry = new THREE.CylinderGeometry(size/2, size/2, size, 32);
                     break;
+                case 'free':
                 default:
                     // For 'free' or any other type, return null
                     return null;
@@ -388,84 +397,112 @@
             document.getElementById('loadingIndicator').style.display = 'block';
             
             requestAnimationFrame(() => {
-                // Clear existing nodes and lines
-                nodes.forEach(node => scene.remove(node));
-                lines.forEach(line => scene.remove(line));
-                nodes = [];
-                lines = [];
+                try {
+                    // Clear existing nodes and lines
+                    nodes.forEach(node => scene.remove(node));
+                    lines.forEach(line => scene.remove(line));
+                    nodes = [];
+                    lines = [];
 
-                // Add nodes and supports
-                const nodeGeometry = new THREE.SphereGeometry(0.2);
-                const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff9f });
+                    // Add nodes and supports
+                    const nodeGeometry = new THREE.SphereGeometry(0.2);
+                    const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff9f });
 
-                nodesData.forEach((node, index) => {
-                    // Add node
-                    const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
-                    nodeMesh.position.set(node[1], node[2], node[3]);
-                    scene.add(nodeMesh);
-                    nodes.push(nodeMesh);
+                    nodesData.forEach((node, index) => {
+                        if (!node) return; // Skip null nodes
 
-                    // Add support if not free
-                    const supportGeometry = createSupportGeometry(node[4]);
-                    if (supportGeometry) {
-                        const supportMaterial = new THREE.MeshBasicMaterial({ 
-                            color: 0xff0000,
-                            transparent: true,
-                            opacity: 0.8
-                        });
-                        const support = new THREE.Mesh(supportGeometry, supportMaterial);
-                        
-                        // Position support below the node
-                        support.position.set(node[1], node[2], node[3]);
-                        support.position.y -= 0.5; // Move support below the node
-                        
-                        // Rotate support to point upward
-                        support.rotation.x = Math.PI / 2;
-                        
-                        scene.add(support);
-                        nodes.push(support);
-                    }
+                        // Add node
+                        const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                        nodeMesh.position.set(
+                            parseFloat(node[1]) || 0,
+                            parseFloat(node[2]) || 0,
+                            parseFloat(node[3]) || 0
+                        );
+                        scene.add(nodeMesh);
+                        nodes.push(nodeMesh);
 
-                    // Add node label
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.width = 256;
-                    canvas.height = 64;
-                    context.fillStyle = '#1e1e1e';
-                    context.fillRect(0, 0, canvas.width, canvas.height);
-                    context.font = '24px Consolas';
-                    context.fillStyle = '#00ff9f';
-                    context.fillText(node[0], 10, 40);
+                        // Add support if not free
+                        const supportGeometry = createSupportGeometry(node[4]);
+                        if (supportGeometry) {
+                            const supportMaterial = new THREE.MeshBasicMaterial({ 
+                                color: 0xff0000,
+                                transparent: true,
+                                opacity: 0.8
+                            });
+                            const support = new THREE.Mesh(supportGeometry, supportMaterial);
+                            
+                            // Position support below the node
+                            support.position.set(
+                                parseFloat(node[1]) || 0,
+                                (parseFloat(node[2]) || 0) - 0.5, // Move support below the node
+                                parseFloat(node[3]) || 0
+                            );
+                            
+                            // Rotate support to point upward
+                            support.rotation.x = Math.PI / 2;
+                            
+                            scene.add(support);
+                            nodes.push(support);
+                        }
 
-                    const texture = new THREE.CanvasTexture(canvas);
-                    const labelMaterial = new THREE.SpriteMaterial({ map: texture });
-                    const label = new THREE.Sprite(labelMaterial);
-                    label.position.set(node[1], node[2] + 0.5, node[3]);
-                    label.scale.set(2, 0.5, 1);
-                    scene.add(label);
-                    nodes.push(label);
-                });
+                        // Add node label
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = 256;
+                        canvas.height = 64;
+                        context.fillStyle = '#1e1e1e';
+                        context.fillRect(0, 0, canvas.width, canvas.height);
+                        context.font = '24px Consolas';
+                        context.fillStyle = '#00ff9f';
+                        context.fillText(node[0] || `Node${index + 1}`, 10, 40);
 
-                // Add lines between nodes
-                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff9f });
-                
-                membersData.forEach(member => {
-                    const startNode = nodesData.find(node => node[0] === member[0]);
-                    const endNode = nodesData.find(node => node[0] === member[1]);
+                        const texture = new THREE.CanvasTexture(canvas);
+                        const labelMaterial = new THREE.SpriteMaterial({ map: texture });
+                        const label = new THREE.Sprite(labelMaterial);
+                        label.position.set(
+                            parseFloat(node[1]) || 0,
+                            (parseFloat(node[2]) || 0) + 0.5,
+                            parseFloat(node[3]) || 0
+                        );
+                        label.scale.set(2, 0.5, 1);
+                        scene.add(label);
+                        nodes.push(label);
+                    });
+
+                    // Add lines between nodes
+                    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff9f });
                     
-                    if (startNode && endNode) {
-                        const points = [];
-                        points.push(new THREE.Vector3(startNode[1], startNode[2], startNode[3]));
-                        points.push(new THREE.Vector3(endNode[1], endNode[2], endNode[3]));
-                        
-                        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                        const line = new THREE.Line(geometry, lineMaterial);
-                        scene.add(line);
-                        lines.push(line);
-                    }
-                });
+                    membersData.forEach(member => {
+                        if (!member || !member[0] || !member[1]) return; // Skip invalid members
 
-                document.getElementById('loadingIndicator').style.display = 'none';
+                        const startNode = nodesData.find(node => node && node[0] === member[0]);
+                        const endNode = nodesData.find(node => node && node[0] === member[1]);
+                        
+                        if (startNode && endNode) {
+                            const points = [];
+                            points.push(new THREE.Vector3(
+                                parseFloat(startNode[1]) || 0,
+                                parseFloat(startNode[2]) || 0,
+                                parseFloat(startNode[3]) || 0
+                            ));
+                            points.push(new THREE.Vector3(
+                                parseFloat(endNode[1]) || 0,
+                                parseFloat(endNode[2]) || 0,
+                                parseFloat(endNode[3]) || 0
+                            ));
+                            
+                            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                            const line = new THREE.Line(geometry, lineMaterial);
+                            scene.add(line);
+                            lines.push(line);
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Error updating visualization:', error);
+                } finally {
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                }
             });
         }
 
