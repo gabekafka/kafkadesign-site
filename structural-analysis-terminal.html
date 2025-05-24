@@ -272,14 +272,16 @@
                            document.getElementById('visualization').clientHeight);
             document.getElementById('visualization').appendChild(renderer.domElement);
 
-            // Add grid
+            // Add grid (now in XZ plane)
             const gridHelper = new THREE.GridHelper(20, 20);
+            gridHelper.rotation.x = Math.PI / 2; // Rotate grid to XZ plane
             scene.add(gridHelper);
 
             // Add axes
             const axesHelper = new THREE.AxesHelper(5);
             scene.add(axesHelper);
 
+            // Update camera position for Y-up view
             camera.position.set(15, 15, 15);
             camera.lookAt(0, 0, 0);
 
@@ -307,7 +309,8 @@
 
                 nodesData.forEach((node, index) => {
                     const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
-                    nodeMesh.position.set(node[1], node[2], node[3]);
+                    // Swap Y and Z coordinates to make Y up
+                    nodeMesh.position.set(node[1], node[3], node[2]);
                     scene.add(nodeMesh);
                     nodes.push(nodeMesh);
 
@@ -325,7 +328,8 @@
                     const texture = new THREE.CanvasTexture(canvas);
                     const labelMaterial = new THREE.SpriteMaterial({ map: texture });
                     const label = new THREE.Sprite(labelMaterial);
-                    label.position.set(node[1], node[2] + 0.5, node[3]);
+                    // Update label position for Y-up
+                    label.position.set(node[1], node[3] + 0.5, node[2]);
                     label.scale.set(2, 0.5, 1);
                     scene.add(label);
                     nodes.push(label);
@@ -340,8 +344,9 @@
                     
                     if (startNode && endNode) {
                         const points = [];
-                        points.push(new THREE.Vector3(startNode[1], startNode[2], startNode[3]));
-                        points.push(new THREE.Vector3(endNode[1], endNode[2], endNode[3]));
+                        // Swap Y and Z coordinates for Y-up
+                        points.push(new THREE.Vector3(startNode[1], startNode[3], startNode[2]));
+                        points.push(new THREE.Vector3(endNode[1], endNode[3], endNode[2]));
                         
                         const geometry = new THREE.BufferGeometry().setFromPoints(points);
                         const line = new THREE.Line(geometry, lineMaterial);
