@@ -90,6 +90,25 @@
             color: #00ff9f;
             display: none;
         }
+
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: #2a2a2a;
+            border: 1px solid #00ff9f;
+            color: #00ff9f;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: 'Consolas', monospace;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+        }
     </style>
 </head>
 <body>
@@ -97,10 +116,18 @@
         <div class="input-section">
             <div class="table-container">
                 <h2>Node Definitions</h2>
+                <div class="controls">
+                    <button onclick="addNodeRow()">Add Row</button>
+                    <button onclick="clearNodesTable()">Clear Table</button>
+                </div>
                 <div id="nodesTable"></div>
             </div>
             <div class="table-container">
                 <h2>Member Definitions</h2>
+                <div class="controls">
+                    <button onclick="addMemberRow()">Add Row</button>
+                    <button onclick="clearMembersTable()">Clear Table</button>
+                </div>
                 <div id="membersTable"></div>
             </div>
         </div>
@@ -109,7 +136,7 @@
     <div class="loading" id="loadingIndicator">Updating visualization...</div>
 
     <script>
-        // Initialize nodes table
+        // Initialize nodes table with empty data
         const nodesData = [
             ['Node1', 0, 0, 0, 'Fixed'],
             ['Node2', 10, 0, 0, 'Free'],
@@ -122,22 +149,27 @@
             colHeaders: ['Label', 'X', 'Y', 'Z', 'Fixity'],
             columns: [
                 { type: 'text' },
-                { type: 'numeric' },
-                { type: 'numeric' },
-                { type: 'numeric' },
+                { type: 'numeric', format: '0.000' },
+                { type: 'numeric', format: '0.000' },
+                { type: 'numeric', format: '0.000' },
                 { 
                     type: 'dropdown',
                     source: ['Fixed', 'Free', 'Pinned', 'Roller']
                 }
             ],
-            height: 200,
+            height: 300,
             width: '100%',
             licenseKey: 'non-commercial-and-evaluation',
             afterChange: function(changes, source) {
-                if (source === 'edit') {
+                if (source === 'edit' || source === 'paste') {
                     updateVisualization();
+                    updateMemberNodeOptions();
                 }
-            }
+            },
+            contextMenu: true,
+            copyPaste: true,
+            fillHandle: true,
+            stretchH: 'all'
         });
 
         // Initialize members table
@@ -161,15 +193,71 @@
                     source: nodesData.map(row => row[0])
                 }
             ],
-            height: 200,
+            height: 300,
             width: '100%',
             licenseKey: 'non-commercial-and-evaluation',
             afterChange: function(changes, source) {
-                if (source === 'edit') {
+                if (source === 'edit' || source === 'paste') {
                     updateVisualization();
                 }
-            }
+            },
+            contextMenu: true,
+            copyPaste: true,
+            fillHandle: true,
+            stretchH: 'all'
         });
+
+        // Function to add a new row to nodes table
+        function addNodeRow() {
+            const newRow = [`Node${nodesData.length + 1}`, 0, 0, 0, 'Free'];
+            nodesData.push(newRow);
+            nodesTable.loadData(nodesData);
+            updateMemberNodeOptions();
+        }
+
+        // Function to add a new row to members table
+        function addMemberRow() {
+            const newRow = ['', ''];
+            membersData.push(newRow);
+            membersTable.loadData(membersData);
+        }
+
+        // Function to clear nodes table
+        function clearNodesTable() {
+            if (confirm('Are you sure you want to clear all nodes? This will also clear all members.')) {
+                nodesData.length = 0;
+                membersData.length = 0;
+                nodesTable.loadData(nodesData);
+                membersTable.loadData(membersData);
+                updateVisualization();
+            }
+        }
+
+        // Function to clear members table
+        function clearMembersTable() {
+            if (confirm('Are you sure you want to clear all members?')) {
+                membersData.length = 0;
+                membersTable.loadData(membersData);
+                updateVisualization();
+            }
+        }
+
+        // Function to update member node options when nodes change
+        function updateMemberNodeOptions() {
+            const nodeLabels = nodesData.map(row => row[0]);
+            membersTable.updateSettings({
+                columns: [
+                    { 
+                        type: 'dropdown',
+                        source: nodeLabels
+                    },
+                    { 
+                        type: 'dropdown',
+                        source: nodeLabels
+                    }
+                ]
+            });
+        }
 
         // Three.js visualization
         let scene, camera, renderer, nodes = [], lines = [];
