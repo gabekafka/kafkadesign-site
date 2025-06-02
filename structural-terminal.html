@@ -17,6 +17,7 @@
     .terminal {
       max-width: 800px;
       margin: 0;
+      position: relative;
     }
 
     .guide {
@@ -53,6 +54,7 @@
       display: flex;
       gap: 0.5rem;
       align-items: center;
+      position: relative;
     }
 
     /* Add styles for autocomplete suggestions */
@@ -64,6 +66,8 @@
       overflow-y: auto;
       width: 100%;
       z-index: 1000;
+      top: 100%;
+      left: 0;
     }
 
     .suggestion-item {
