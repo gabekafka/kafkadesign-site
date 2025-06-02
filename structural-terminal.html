@@ -190,6 +190,7 @@
     const outputDiv = document.getElementById('terminalOutput');
     const suggestionsDiv = document.getElementById('suggestions');
     let wShapeData = {};
+    let lastRy = null; // Store the most recent ry value
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -287,6 +288,13 @@
 
         const result = wShapeData[command];
         if (result) {
+          // Try to get ry (case-insensitive)
+          const ryKey = Object.keys(result).find(k => k.trim().toLowerCase() === 'ry');
+          if (ryKey) {
+            lastRy = parseFloat(result[ryKey]);
+          } else {
+            lastRy = null;
+          }
           let tableHTML = '<table class="result-table">';
           for (const [key, value] of Object.entries(result)) {
             tableHTML += `
@@ -377,10 +385,14 @@
         lpResultDiv.style.color = 'red';
         return;
       }
-      // Example formula for Lp (AISC): Lp = 1.76 * ry * sqrt(E/Fy)
-      // Since ry is not provided, just show the E/Fy part for now
-      const lp = 1.76 * Math.sqrt(E / Fy);
-      lpResultDiv.textContent = `Lp = 1.76 × sqrt(E / Fy) = ${lp.toFixed(3)}`;
+      if (lastRy === null || isNaN(lastRy)) {
+        lpResultDiv.textContent = 'Please search for a W-shape first (ry not found).';
+        lpResultDiv.style.color = 'red';
+        return;
+      }
+      // Lp = 1.76 * ry * sqrt(E/Fy)
+      const lp = 1.76 * lastRy * Math.sqrt(E / Fy);
+      lpResultDiv.textContent = `Lp = 1.76 × ${lastRy} × sqrt(E / Fy) = ${lp.toFixed(3)}`;
       lpResultDiv.style.color = '#00ff9f';
     };
   </script>
