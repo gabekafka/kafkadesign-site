@@ -10,11 +10,33 @@
       font-family: monospace;
       margin: 0;
       padding: 2rem;
+      display: flex;
+      gap: 2rem;
     }
 
     .terminal {
       max-width: 800px;
-      margin: 0 auto;
+      margin: 0;
+    }
+
+    .guide {
+      width: 250px;
+      padding: 1rem;
+      border: 1px solid #00ff9f;
+      background-color: rgba(0, 255, 159, 0.05);
+      border-radius: 4px;
+    }
+
+    .guide h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      color: #00ff9f;
+    }
+
+    .guide p {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
     }
 
     input {
@@ -61,6 +83,10 @@
       <input id="terminalInput" type="text" placeholder="Search a W-shape..." autofocus />
     </div>
     <div id="terminalOutput" style="margin-top: 1rem;"></div>
+  </div>
+  <div class="guide">
+    <h2>Directions:</h2>
+    <p>structural engineers tool for quick search of AISC Steel member properties</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
