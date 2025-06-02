@@ -83,19 +83,24 @@
       background: #2a2a2a;
     }
 
-    .result-row {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 1rem;
-      padding: 0.25rem 0;
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.5rem 0;
     }
 
-    .result-row.property-name {
+    .result-table td {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #00ff9f;
+    }
+
+    .result-table td:first-child {
       color: #00ff9f;
       font-weight: bold;
+      width: 200px;
     }
 
-    .result-row.property-value {
+    .result-table td:last-child {
       color: #ffffff;
     }
 
@@ -221,14 +226,17 @@
 
         const result = wShapeData[command];
         if (result) {
+          let tableHTML = '<table class="result-table">';
           for (const [key, value] of Object.entries(result)) {
-            newResult.innerHTML += `
-              <div class="result-row">
-                <div class="property-name">${key.trim()}</div>
-                <div class="property-value">${value}</div>
-              </div>
+            tableHTML += `
+              <tr>
+                <td>${key.trim()}</td>
+                <td>${value}</td>
+              </tr>
             `;
           }
+          tableHTML += '</table>';
+          newResult.innerHTML += tableHTML;
         } else {
           newResult.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
         }
