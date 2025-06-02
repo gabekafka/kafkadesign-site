@@ -189,6 +189,14 @@
         key.startsWith(inputValue.toUpperCase())
       );
 
+      // Sort matches by the number in the W-shape name
+      matches.sort((a, b) => {
+        // Extract numbers from W-shape names (e.g., "W16X31" -> 16)
+        const numA = parseInt(a.match(/\d+/)[0]);
+        const numB = parseInt(b.match(/\d+/)[0]);
+        return numA - numB;
+      });
+
       if (matches.length > 0) {
         suggestionsDiv.innerHTML = matches
           .map(match => `<div class="suggestion-item">${match}</div>`)
