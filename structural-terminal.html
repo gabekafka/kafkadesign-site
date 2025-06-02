@@ -82,6 +82,35 @@
     .suggestion-item:hover {
       background: #2a2a2a;
     }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 1rem;
+      padding: 0.25rem 0;
+    }
+
+    .result-row.property-name {
+      color: #00ff9f;
+      font-weight: bold;
+    }
+
+    .result-row.property-value {
+      color: #ffffff;
+    }
+
+    .search-header {
+      color: #00ff9f;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-container {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border: 1px solid #00ff9f;
+      border-radius: 4px;
+      background-color: rgba(0, 255, 159, 0.05);
+    }
   </style>
 </head>
 <body>
@@ -187,19 +216,22 @@
 
         // Create new result container
         const newResult = document.createElement('div');
-        newResult.innerHTML = `<div>&gt; ${command}</div>`;
+        newResult.className = 'result-container';
+        newResult.innerHTML = `<div class="search-header">&gt; ${command}</div>`;
 
         const result = wShapeData[command];
         if (result) {
           for (const [key, value] of Object.entries(result)) {
-            newResult.innerHTML += `<div>${key.trim()}: ${value}</div>`;
+            newResult.innerHTML += `
+              <div class="result-row">
+                <div class="property-name">${key.trim()}</div>
+                <div class="property-value">${value}</div>
+              </div>
+            `;
           }
         } else {
           newResult.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
         }
-
-        // Add a separator between results
-        newResult.innerHTML += '<hr style="border: none; border-top: 1px solid #00ff9f; margin: 1rem 0;">';
 
         // Prepend the new result to the output
         outputDiv.insertBefore(newResult, outputDiv.firstChild);
