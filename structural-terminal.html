@@ -105,6 +105,22 @@
       color: #ffffff;
     }
 
+    .copy-button {
+      background-color: #00ff9f;
+      color: #000000;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .copy-button:hover {
+      background-color: #00cc7f;
+    }
+
     .search-header {
       color: #00ff9f;
       margin-bottom: 0.5rem;
@@ -223,7 +239,10 @@
         // Create new result container
         const newResult = document.createElement('div');
         newResult.className = 'result-container';
-        newResult.innerHTML = `<div class="search-header">&gt; ${command}</div>`;
+        newResult.innerHTML = `
+          <div class="search-header">&gt; ${command}</div>
+          <button class="copy-button" onclick="copyTableToClipboard(this)">Copy to Excel</button>
+        `;
 
         const result = wShapeData[command];
         if (result) {
@@ -231,8 +250,8 @@
           for (const [key, value] of Object.entries(result)) {
             tableHTML += `
               <tr>
-                <td>${key.trim()}</td>
-                <td>${value}</td>
+                <td style="background-color: #000000;">${key.trim()}</td>
+                <td style="background-color: #000000;">${value}</td>
               </tr>
             `;
           }
@@ -249,6 +268,26 @@
         suggestionsDiv.style.display = 'none';
       }
     });
+
+    // Add copy function
+    function copyTableToClipboard(button) {
+      const table = button.nextElementSibling;
+      const range = document.createRange();
+      range.selectNode(table);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+      
+      // Visual feedback
+      const originalText = button.textContent;
+      button.textContent = 'Copied!';
+      button.style.backgroundColor = '#00cc7f';
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.backgroundColor = '#00ff9f';
+      }, 1000);
+    }
   </script>
 </body>
 </html>
