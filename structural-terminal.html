@@ -198,18 +198,24 @@
         const command = input.value.trim().toUpperCase();
         input.value = '';
 
-        outputDiv.innerHTML += `<div>&gt; ${command}</div>`;
+        // Create new result container
+        const newResult = document.createElement('div');
+        newResult.innerHTML = `<div>&gt; ${command}</div>`;
 
         const result = wShapeData[command];
         if (result) {
           for (const [key, value] of Object.entries(result)) {
-            outputDiv.innerHTML += `<div>${key.trim()}: ${value}</div>`;
+            newResult.innerHTML += `<div>${key.trim()}: ${value}</div>`;
           }
         } else {
-          outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+          newResult.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
         }
 
-        outputDiv.scrollTop = outputDiv.scrollHeight;
+        // Add a separator between results
+        newResult.innerHTML += '<hr style="border: none; border-top: 1px solid #00ff9f; margin: 1rem 0;">';
+
+        // Prepend the new result to the output
+        outputDiv.insertBefore(newResult, outputDiv.firstChild);
         suggestionsDiv.style.display = 'none';
       } else if (e.key === 'Escape') {
         suggestionsDiv.style.display = 'none';
