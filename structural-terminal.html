@@ -92,17 +92,18 @@
     .result-table td {
       padding: 0.25rem 0.5rem;
       border: 1px solid #00ff9f;
-      background-color: #000000;
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .result-table td:first-child {
-      color: #00ff9f;
+      color: #000000;
       font-weight: bold;
       width: 200px;
     }
 
     .result-table td:last-child {
-      color: #ffffff;
+      color: #000000;
     }
 
     .copy-button {
@@ -290,8 +291,8 @@
         Array.from(row.cells).forEach((cell, index) => {
           const newCell = newRow.insertCell();
           newCell.textContent = cell.textContent;
-          newCell.style.backgroundColor = '#000000';
-          newCell.style.color = index === 0 ? '#00ff9f' : '#ffffff';
+          newCell.style.backgroundColor = '#ffffff';
+          newCell.style.color = '#000000';
           newCell.style.padding = '4px 8px';
           newCell.style.border = '1px solid #00ff9f';
           newCell.style.fontFamily = 'monospace';
