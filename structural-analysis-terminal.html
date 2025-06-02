@@ -40,6 +40,28 @@
             border-radius: 4px;
         }
 
+        .user-guide {
+            flex: 1;
+            background: #2a2a2a;
+            border: 1px solid #00ff9f;
+            border-radius: 4px;
+            padding: 20px;
+            color: #00ff9f;
+            font-family: 'Consolas', monospace;
+            max-width: 300px;
+        }
+
+        .user-guide h2 {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #00ff9f;
+            padding-bottom: 10px;
+        }
+
+        .user-guide p {
+            line-height: 1.5;
+            margin: 0;
+        }
+
         .table-container {
             background: #2a2a2a;
             border: 1px solid #00ff9f;
@@ -132,6 +154,10 @@
             </div>
         </div>
         <div class="visualization" id="visualization"></div>
+        <div class="user-guide">
+            <h2>Directions</h2>
+            <p>structural engineers tool for quick search of AISC Steel member properties</p>
+        </div>
     </div>
     <div class="loading" id="loadingIndicator">Updating visualization...</div>
 
