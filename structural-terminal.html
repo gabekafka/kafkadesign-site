@@ -171,7 +171,17 @@
       <p style="margin-top: 0.5rem;">gabe@getcoffee.io</p>
     </div>
     <div class="vertical-divider"></div>
-    <div class="right-side-content"><!-- Future content goes here --></div>
+    <div class="right-side-content">
+      <div class="lp-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px;">
+        <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lp Calculator</h2>
+        <label for="Einput" style="display:block; margin-bottom:0.5rem;">E (ksi):</label>
+        <input id="Einput" type="number" step="any" placeholder="29000" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
+        <label for="Fyinput" style="display:block; margin-bottom:0.5rem;">Fy (ksi):</label>
+        <input id="Fyinput" type="number" step="any" placeholder="50" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
+        <button id="calcLpBtn" style="width:100%; background:#00ff9f; color:#181818; border:none; border-radius:3px; padding:0.5rem; font-family:monospace; font-weight:bold; cursor:pointer;">Calculate Lp</button>
+        <div id="lpResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -356,6 +366,23 @@
         button.style.backgroundColor = '#00ff9f';
       }, 1000);
     }
+
+    // Lp Calculator logic
+    document.getElementById('calcLpBtn').onclick = function() {
+      const E = parseFloat(document.getElementById('Einput').value);
+      const Fy = parseFloat(document.getElementById('Fyinput').value);
+      const lpResultDiv = document.getElementById('lpResult');
+      if (isNaN(E) || isNaN(Fy) || E <= 0 || Fy <= 0) {
+        lpResultDiv.textContent = 'Please enter valid values for E and Fy.';
+        lpResultDiv.style.color = 'red';
+        return;
+      }
+      // Example formula for Lp (AISC): Lp = 1.76 * ry * sqrt(E/Fy)
+      // Since ry is not provided, just show the E/Fy part for now
+      const lp = 1.76 * Math.sqrt(E / Fy);
+      lpResultDiv.textContent = `Lp = 1.76 × sqrt(E / Fy) = ${lp.toFixed(3)}`;
+      lpResultDiv.style.color = '#00ff9f';
+    };
   </script>
 </body>
 </html>
