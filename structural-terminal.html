@@ -272,12 +272,49 @@
     // Add copy function
     function copyTableToClipboard(button) {
       const table = button.nextElementSibling;
+      
+      // Create a temporary div to hold the formatted content
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      
+      // Create a formatted table with Excel-compatible styling
+      const formattedTable = document.createElement('table');
+      formattedTable.style.borderCollapse = 'collapse';
+      formattedTable.style.width = '100%';
+      
+      // Copy each row with formatting
+      Array.from(table.rows).forEach(row => {
+        const newRow = formattedTable.insertRow();
+        Array.from(row.cells).forEach((cell, index) => {
+          const newCell = newRow.insertCell();
+          newCell.textContent = cell.textContent;
+          newCell.style.backgroundColor = '#000000';
+          newCell.style.color = index === 0 ? '#00ff9f' : '#ffffff';
+          newCell.style.padding = '4px 8px';
+          newCell.style.border = '1px solid #00ff9f';
+          newCell.style.fontFamily = 'monospace';
+          if (index === 0) {
+            newCell.style.fontWeight = 'bold';
+            newCell.style.width = '200px';
+          }
+        });
+      });
+      
+      tempDiv.appendChild(formattedTable);
+      document.body.appendChild(tempDiv);
+      
+      // Select and copy
       const range = document.createRange();
-      range.selectNode(table);
+      range.selectNode(formattedTable);
       window.getSelection().removeAllRanges();
       window.getSelection().addRange(range);
       document.execCommand('copy');
       window.getSelection().removeAllRanges();
+      
+      // Clean up
+      document.body.removeChild(tempDiv);
       
       // Visual feedback
       const originalText = button.textContent;
