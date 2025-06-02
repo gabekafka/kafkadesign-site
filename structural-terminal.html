@@ -57,7 +57,11 @@
       position: relative;
     }
 
-    /* Add styles for autocomplete suggestions */
+    .terminal-input-container {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
     .suggestions {
       position: absolute;
       background: #1e1e1e;
@@ -82,9 +86,12 @@
 </head>
 <body>
   <div class="terminal">
-    <div class="prompt">
-      <span>&gt;</span>
-      <input id="terminalInput" type="text" placeholder="Search a W-shape..." autofocus />
+    <div class="terminal-input-container">
+      <div class="prompt">
+        <span>&gt;</span>
+        <input id="terminalInput" type="text" placeholder="Search a W-shape..." autofocus />
+      </div>
+      <div id="suggestions" class="suggestions" style="display: none;"></div>
     </div>
     <div id="terminalOutput" style="margin-top: 1rem;"></div>
   </div>
@@ -97,8 +104,8 @@
   <script>
     const input = document.getElementById('terminalInput');
     const outputDiv = document.getElementById('terminalOutput');
+    const suggestionsDiv = document.getElementById('suggestions');
     let wShapeData = {};
-    let suggestionsDiv = null;
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -118,16 +125,6 @@
         console.log("Loaded W-shapes:", Object.keys(wShapeData));
       }
     });
-
-    // Create suggestions div
-    function createSuggestionsDiv() {
-      if (!suggestionsDiv) {
-        suggestionsDiv = document.createElement('div');
-        suggestionsDiv.className = 'suggestions';
-        suggestionsDiv.style.display = 'none';
-        document.querySelector('.terminal').appendChild(suggestionsDiv);
-      }
-    }
 
     // Show suggestions based on input
     function showSuggestions(inputValue) {
@@ -150,31 +147,17 @@
       }
     }
 
-    // Handle suggestion click
-    function handleSuggestionClick(suggestion) {
-      input.value = suggestion;
-      suggestionsDiv.style.display = 'none';
-      input.focus();
-    }
-
-    // Focus input on backtick (`) press
-    document.addEventListener('keydown', (e) => {
-      if (e.key === '`') {
-        e.preventDefault();
-        input.focus();
-      }
-    });
-
     // Handle input changes
     input.addEventListener('input', (e) => {
-      createSuggestionsDiv();
       showSuggestions(e.target.value);
     });
 
     // Handle suggestion clicks
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('suggestion-item')) {
-        handleSuggestionClick(e.target.textContent);
+        input.value = e.target.textContent;
+        suggestionsDiv.style.display = 'none';
+        input.focus();
       } else if (!e.target.closest('.suggestions')) {
         suggestionsDiv.style.display = 'none';
       }
