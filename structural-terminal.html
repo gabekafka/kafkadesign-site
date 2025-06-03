@@ -191,6 +191,13 @@
       </div>
       <div class="local-buckling-header" style="color:#00ff9f; font-weight:bold; font-size:1.2rem; margin-top:2.5rem; letter-spacing:0.05em;">Local Buckling</div>
       <div id="lambdaBResult" style="margin-top:1rem; color:#00ff9f; font-size:1.1rem;"></div>
+      <div class="flange-section" style="margin-top:2rem;">
+        <div style="color:#00ff9f; font-weight:bold; font-size:1.1rem;">Flange</div>
+        <div style="color:#00ff9f; font-family:monospace; margin-top:0.5rem;">
+          BB06 = 65 / 21Fy
+        </div>
+        <div id="lambdaPfResult" style="margin-top:0.5rem; color:#00ff9f; font-size:1.1rem;"></div>
+      </div>
     </div>
   </div>
 
@@ -456,6 +463,23 @@
       lrResultDiv.textContent = `Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)} in (${lrFeet.toFixed(3)} ft)`;
       lrResultDiv.style.color = '#00ff9f';
     };
+
+    // Update Lambda_pf whenever Fy input changes
+    document.getElementById('Fyinput').addEventListener('input', function() {
+      updateLambdaPf();
+    });
+    function updateLambdaPf() {
+      const Fy = parseFloat(document.getElementById('Fyinput').value);
+      const lambdaPfDiv = document.getElementById('lambdaPfResult');
+      if (isNaN(Fy) || Fy <= 0) {
+        lambdaPfDiv.textContent = 'Enter a valid Fy to calculate BB06.';
+        return;
+      }
+      const lambdaPf = 65 / Math.sqrt(Fy);
+      lambdaPfDiv.textContent = `BB06 = 65 / 21${Fy} = ${lambdaPf.toFixed(3)}`;
+    }
+    // Initialize Lambda_pf on page load
+    updateLambdaPf();
   </script>
 </body>
 </html>
