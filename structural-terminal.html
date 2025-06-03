@@ -173,7 +173,7 @@
     <div class="vertical-divider"></div>
     <div class="right-side-content">
       <div class="ltb-category" style="color:#00ff9f; font-weight:bold; font-size:1.2rem; margin-bottom:0.5rem; letter-spacing:0.05em;">L.T.B.</div>
-      <div class="lp-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px;">
+      <div class="lp-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px; margin-bottom:2rem;">
         <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lp Calculator</h2>
         <label for="Einput" style="display:block; margin-bottom:0.5rem;">E (ksi):</label>
         <input id="Einput" type="number" step="any" placeholder="29000" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
@@ -181,6 +181,13 @@
         <input id="Fyinput" type="number" step="any" placeholder="50" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
         <button id="calcLpBtn" style="width:100%; background:#00ff9f; color:#181818; border:none; border-radius:3px; padding:0.5rem; font-family:monospace; font-weight:bold; cursor:pointer;">Calculate Lp</button>
         <div id="lpResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
+      </div>
+      <div class="lr-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px;">
+        <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lr Calculator</h2>
+        <label for="cinput" style="display:block; margin-bottom:0.5rem;">c (default 1):</label>
+        <input id="cinput" type="number" step="any" placeholder="1" value="1" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
+        <button id="calcLrBtn" style="width:100%; background:#00ff9f; color:#181818; border:none; border-radius:3px; padding:0.5rem; font-family:monospace; font-weight:bold; cursor:pointer;">Calculate Lr</button>
+        <div id="lrResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
       </div>
     </div>
   </div>
@@ -395,6 +402,44 @@
       const lp = 1.76 * lastRy * Math.sqrt(E / Fy);
       lpResultDiv.textContent = `Lp = 1.76 × ry × sqrt(E / Fy) = 1.76 × ${lastRy} × sqrt(${E} / ${Fy}) = ${lp.toFixed(3)}`;
       lpResultDiv.style.color = '#00ff9f';
+    };
+
+    // Lr Calculator logic
+    document.getElementById('calcLrBtn').onclick = function() {
+      const E = parseFloat(document.getElementById('Einput').value);
+      const Fy = parseFloat(document.getElementById('Fyinput').value);
+      const c = parseFloat(document.getElementById('cinput').value) || 1;
+      const lrResultDiv = document.getElementById('lrResult');
+      // We'll need rts, Sx, ho, J from the most recent member
+      let rts = null, Sx = null, ho = null, J = null;
+      if (lastRy && lastRy > 0) {
+        // Try to get rts, Sx, ho, J from the last searched member
+        const lastResult = Object.values(wShapeData).find(row => parseFloat(row['ry']) === lastRy);
+        if (lastResult) {
+          rts = parseFloat(lastResult['rts'] || lastResult['Rts']);
+          Sx = parseFloat(lastResult['Sx'] || lastResult['SX']);
+          ho = parseFloat(lastResult['ho'] || lastResult['Ho'] || lastResult['h0']);
+          J = parseFloat(lastResult['J'] || lastResult['j']);
+        }
+      }
+      if (isNaN(E) || isNaN(Fy) || isNaN(c) || E <= 0 || Fy <= 0 || c <= 0) {
+        lrResultDiv.textContent = 'Please enter valid values for E, Fy, and c.';
+        lrResultDiv.style.color = 'red';
+        return;
+      }
+      if (!rts || !Sx || !ho || !J) {
+        lrResultDiv.textContent = 'Please search for a W-shape first (rts, Sx, ho, or J not found).';
+        lrResultDiv.style.color = 'red';
+        return;
+      }
+      // Lr = 1.95 * rts * (E / (0.7 * Fy)) * sqrt(J * c / (Sx * ho)) * sqrt(1 + sqrt(1 + 6.76 * (0.7 * Fy * Sx * ho / (E * J * c))^2))
+      const A = 1.95 * rts * (E / (0.7 * Fy));
+      const B = Math.sqrt(J * c / (Sx * ho));
+      const C = 0.7 * Fy * Sx * ho / (E * J * c);
+      const D = Math.sqrt(1 + 6.76 * Math.pow(C, 2));
+      const lr = A * B * Math.sqrt(1 + D);
+      lrResultDiv.textContent = `Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)}`;
+      lrResultDiv.style.color = '#00ff9f';
     };
   </script>
 </body>
