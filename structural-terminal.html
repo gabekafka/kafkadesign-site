@@ -472,7 +472,7 @@
       const Fy = parseFloat(document.getElementById('Fyinput').value);
       const lambdaPfDiv = document.getElementById('lambdaPfResult');
       if (isNaN(Fy) || Fy <= 0) {
-        lambdaPfDiv.textContent = 'Enter a valid Fy to calculate BB06.';
+        lambdaPfDiv.innerHTML = 'Enter a valid Fy to calculate &#955;<sub>pf</sub>.';
         return;
       }
       const lambdaPf = 65 / Math.sqrt(Fy);
