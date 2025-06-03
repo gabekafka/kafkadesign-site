@@ -190,6 +190,7 @@
         <div id="lrResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
       </div>
       <div class="local-buckling-header" style="color:#00ff9f; font-weight:bold; font-size:1.2rem; margin-top:2.5rem; letter-spacing:0.05em;">Local Buckling</div>
+      <div id="lambdaBResult" style="margin-top:1rem; color:#00ff9f; font-size:1.1rem;"></div>
     </div>
   </div>
 
@@ -304,6 +305,17 @@
           } else {
             lastRy = null;
           }
+          // Lambda_b calculation
+          const bf = parseFloat(result['bf'] || result['BF']);
+          const tf = parseFloat(result['tf'] || result['TF']);
+          let lambdaBText = '';
+          if (!isNaN(bf) && !isNaN(tf) && tf !== 0) {
+            const lambdaB = bf / (2 * tf);
+            lambdaBText = `Lambda_b = bf / (2 × tf) = ${bf} / (2 × ${tf}) = ${lambdaB.toFixed(3)}`;
+          } else {
+            lambdaBText = 'Lambda_b: bf or tf not found for this member.';
+          }
+          document.getElementById('lambdaBResult').textContent = lambdaBText;
           let tableHTML = '<table class="result-table">';
           for (const [key, value] of Object.entries(result)) {
             tableHTML += `
