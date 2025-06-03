@@ -400,7 +400,8 @@
       }
       // Lp = 1.76 * ry * sqrt(E/Fy)
       const lp = 1.76 * lastRy * Math.sqrt(E / Fy);
-      lpResultDiv.textContent = `Lp = 1.76 × ry × sqrt(E / Fy) = 1.76 × ${lastRy} × sqrt(${E} / ${Fy}) = ${lp.toFixed(3)}`;
+      const lpFeet = lp / 12;
+      lpResultDiv.textContent = `Lp = 1.76 × ry × sqrt(E / Fy) = 1.76 × ${lastRy} × sqrt(${E} / ${Fy}) = ${lp.toFixed(3)} in (${lpFeet.toFixed(3)} ft)`;
       lpResultDiv.style.color = '#00ff9f';
     };
 
@@ -438,7 +439,8 @@
       const C = 0.7 * Fy * Sx * ho / (E * J * c);
       const D = Math.sqrt(1 + 6.76 * Math.pow(C, 2));
       const lr = A * B * Math.sqrt(1 + D);
-      lrResultDiv.textContent = `Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)}`;
+      const lrFeet = lr / 12;
+      lrResultDiv.textContent = `Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)} in (${lrFeet.toFixed(3)} ft)`;
       lrResultDiv.style.color = '#00ff9f';
     };
   </script>
