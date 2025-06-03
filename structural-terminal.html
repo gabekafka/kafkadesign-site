@@ -318,11 +318,11 @@
           let lambdaBText = '';
           if (!isNaN(bf) && !isNaN(tf) && tf !== 0) {
             const lambdaB = bf / (2 * tf);
-            lambdaBText = `Lambda_b = bf / (2 × tf) = ${bf} / (2 × ${tf}) = ${lambdaB.toFixed(3)}`;
+            lambdaBText = `&lambda;<sub>b</sub> = bf / (2 &times; tf) = ${bf} / (2 &times; ${tf}) = ${lambdaB.toFixed(3)}`;
           } else {
-            lambdaBText = 'Lambda_b: bf or tf not found for this member.';
+            lambdaBText = '&lambda;<sub>b</sub>: bf or tf not found for this member.';
           }
-          document.getElementById('lambdaBResult').textContent = lambdaBText;
+          document.getElementById('lambdaBResult').innerHTML = lambdaBText;
           let tableHTML = '<table class="result-table">';
           for (const [key, value] of Object.entries(result)) {
             tableHTML += `
