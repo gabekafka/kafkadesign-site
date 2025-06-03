@@ -392,7 +392,7 @@
       }
       // Lp = 1.76 * ry * sqrt(E/Fy)
       const lp = 1.76 * lastRy * Math.sqrt(E / Fy);
-      lpResultDiv.textContent = `Lp = 1.76 × ${lastRy} × sqrt(E / Fy) = ${lp.toFixed(3)}`;
+      lpResultDiv.textContent = `Lp = 1.76 × ry × sqrt(E / Fy) = 1.76 × ${lastRy} × sqrt(${E} / ${Fy}) = ${lp.toFixed(3)}`;
       lpResultDiv.style.color = '#00ff9f';
     };
   </script>
