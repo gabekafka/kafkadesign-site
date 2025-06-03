@@ -194,7 +194,7 @@
       <div class="flange-section" style="margin-top:2rem;">
         <div style="color:#00ff9f; font-weight:bold; font-size:1.1rem;">Flange</div>
         <div style="color:#00ff9f; font-family:monospace; margin-top:0.5rem;">
-          BB06 = 65 / 21Fy
+          &#955;<sub>pf</sub> = 65 / &radic;Fy
         </div>
         <div id="lambdaPfResult" style="margin-top:0.5rem; color:#00ff9f; font-size:1.1rem;"></div>
       </div>
@@ -476,7 +476,7 @@
         return;
       }
       const lambdaPf = 65 / Math.sqrt(Fy);
-      lambdaPfDiv.textContent = `BB06 = 65 / 21${Fy} = ${lambdaPf.toFixed(3)}`;
+      lambdaPfDiv.innerHTML = `&#955;<sub>pf</sub> = 65 / &radic;${Fy} = ${lambdaPf.toFixed(3)}`;
     }
     // Initialize Lambda_pf on page load
     updateLambdaPf();
