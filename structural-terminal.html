@@ -171,22 +171,6 @@
       <p style="margin-top: 0.5rem;">gabe@getcoffee.io</p>
     </div>
     <div class="vertical-divider"></div>
-    <div class="right-side-content">
-      <div class="lr-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px;">
-        <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lr Calculator</h2>
-        <label for="cinput" style="display:block; margin-bottom:0.5rem;">c (default 1):</label>
-        <input id="cinput" type="number" step="any" placeholder="1" value="1" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
-        <button id="calcLrBtn" style="width:100%; background:#00ff9f; color:#181818; border:none; border-radius:3px; padding:0.5rem; font-family:monospace; font-weight:bold; cursor:pointer;">Calculate Lr</button>
-        <div id="lrResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
-      </div>
-      <div class="flange-section" style="margin-top:2rem;">
-        <div style="color:#00ff9f; font-weight:bold; font-size:1.1rem;">Flange</div>
-        <div style="color:#00ff9f; font-family:monospace; margin-top:0.5rem;">
-          &#955;<sub>pf</sub> = 65 / &radic;Fy
-        </div>
-        <div id="lambdaPfResult" style="margin-top:0.5rem; color:#00ff9f; font-size:1.1rem;"></div>
-      </div>
-    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -202,6 +186,8 @@
     let lpPromptState = null; // Track Lp prompt state
     let lpInputs = {};
     let lastE = 29000; // Default E value
+    let lambdaPromptState = null;
+    let lambdaInputs = {};
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -404,6 +390,37 @@
             = 1.76 × ${ry} × sqrt(${E} / ${Fy})<br>
             = <b>${lp.toFixed(3)} in</b> (<b>${lpFeet.toFixed(3)} ft</b>)</div>`;
             lpPromptState = null;
+            return;
+          }
+        }
+
+        // Lambda terminal command: <member> lambda pf
+        const lambdaMatch = command.match(/^(w\d+x\d+)\s+lambda\s+(pf)$/i);
+        if (lambdaMatch) {
+          const memberKey = lambdaMatch[1].toUpperCase();
+          if (!wShapeData[memberKey]) {
+            outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
+            return;
+          }
+          lastMember = memberKey;
+          lambdaPromptState = lambdaMatch[2].toLowerCase();
+          lambdaInputs = {};
+          outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>`;
+          return;
+        }
+
+        // Lambda prompt flow
+        if (lambdaPromptState) {
+          if (lambdaPromptState === 'pf') {
+            lambdaInputs.Fy = parseFloat(command);
+            if (isNaN(lambdaInputs.Fy) || lambdaInputs.Fy <= 0) {
+              outputDiv.innerHTML = `<div>Enter Fy (ksi):</div><div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
+              return;
+            }
+            const Fy = lambdaInputs.Fy;
+            const lambdaPf = 65 / Math.sqrt(Fy);
+            outputDiv.innerHTML = `<div style='color:#00ff9f;'>&lambda;<sub>pf</sub> = 65 / &radic;Fy<br>= 65 / &radic;${Fy}<br>= <b>${lambdaPf.toFixed(3)}</b></div>`;
+            lambdaPromptState = null;
             return;
           }
         }
