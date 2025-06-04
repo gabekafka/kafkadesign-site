@@ -208,6 +208,9 @@
     const suggestionsDiv = document.getElementById('suggestions');
     let wShapeData = {};
     let lastRy = null; // Store the most recent ry value
+    let lastMember = null; // Store the most recent member key
+    let lrPromptState = null; // Track Lr prompt state
+    let lrInputs = {};
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -292,29 +295,87 @@
           input.value = items[newIndex].textContent;
         }
       } else if (e.key === 'Enter') {
-        const command = input.value.trim().toUpperCase();
+        const command = input.value.trim();
         input.value = '';
 
-        // Create new result container
-        const newResult = document.createElement('div');
-        newResult.className = 'result-container';
-        newResult.innerHTML = `
-          <div class="search-header">&gt; ${command}</div>
-          <button class="copy-button" onclick="copyTableToClipboard(this)">Copy to Excel</button>
-        `;
+        // Check for Lr command pattern: <member> Lr
+        const lrMatch = command.match(/^(w\d+x\d+)\s+lr$/i);
+        if (lrMatch) {
+          const memberKey = lrMatch[1].toUpperCase();
+          if (!wShapeData[memberKey]) {
+            outputDiv.innerHTML += `<div>&gt; ${command}</div><div style="color: red;">❌ W-shape not found: ${memberKey}</div>`;
+            return;
+          }
+          lastMember = memberKey;
+          lrPromptState = 'E';
+          lrInputs = {};
+          outputDiv.innerHTML += `<div>&gt; ${command}</div><div>Enter E (ksi):</div>`;
+          return;
+        }
 
-        const result = wShapeData[command];
-        if (result) {
+        // Handle Lr prompt flow
+        if (lrPromptState) {
+          if (lrPromptState === 'E') {
+            lrInputs.E = parseFloat(command);
+            if (isNaN(lrInputs.E) || lrInputs.E <= 0) {
+              outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid E (ksi):</div>`;
+              return;
+            }
+            lrPromptState = 'Fy';
+            outputDiv.innerHTML += `<div>E = ${lrInputs.E}</div><div>Enter Fy (ksi):</div>`;
+            return;
+          }
+          if (lrPromptState === 'Fy') {
+            lrInputs.Fy = parseFloat(command);
+            if (isNaN(lrInputs.Fy) || lrInputs.Fy <= 0) {
+              outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
+              return;
+            }
+            lrPromptState = 'c';
+            outputDiv.innerHTML += `<div>Fy = ${lrInputs.Fy}</div><div>Enter c (default 1):</div>`;
+            return;
+          }
+          if (lrPromptState === 'c') {
+            lrInputs.c = parseFloat(command);
+            if (isNaN(lrInputs.c) || lrInputs.c <= 0) lrInputs.c = 1;
+            outputDiv.innerHTML += `<div>c = ${lrInputs.c}</div>`;
+            // Now calculate Lr
+            const result = wShapeData[lastMember];
+            let rts = parseFloat(result['rts'] || result['Rts']);
+            let Sx = parseFloat(result['Sx'] || result['SX']);
+            let ho = parseFloat(result['ho'] || result['Ho'] || result['h0']);
+            let J = parseFloat(result['J'] || result['j']);
+            if (!rts || !Sx || !ho || !J) {
+              outputDiv.innerHTML += `<div style='color:red;'>Missing rts, Sx, ho, or J for this member.</div>`;
+              lrPromptState = null;
+              return;
+            }
+            const E = lrInputs.E, Fy = lrInputs.Fy, c = lrInputs.c;
+            const A = 1.95 * rts * (E / (0.7 * Fy));
+            const B = Math.sqrt(J * c / (Sx * ho));
+            const C = 0.7 * Fy * Sx * ho / (E * J * c);
+            const D = Math.sqrt(1 + 6.76 * Math.pow(C, 2));
+            const lr = A * B * Math.sqrt(1 + D);
+            const lrFeet = lr / 12;
+            outputDiv.innerHTML += `<div style='color:#00ff9f;'>Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)} in (${lrFeet.toFixed(3)} ft)</div>`;
+            lrPromptState = null;
+            return;
+          }
+        }
+
+        // Handle other commands
+        const commandResult = wShapeData[command];
+        if (commandResult) {
           // Try to get ry (case-insensitive)
-          const ryKey = Object.keys(result).find(k => k.trim().toLowerCase() === 'ry');
+          const ryKey = Object.keys(commandResult).find(k => k.trim().toLowerCase() === 'ry');
           if (ryKey) {
-            lastRy = parseFloat(result[ryKey]);
+            lastRy = parseFloat(commandResult[ryKey]);
           } else {
             lastRy = null;
           }
           // Lambda_b calculation
-          const bf = parseFloat(result['bf'] || result['BF']);
-          const tf = parseFloat(result['tf'] || result['TF']);
+          const bf = parseFloat(commandResult['bf'] || commandResult['BF']);
+          const tf = parseFloat(commandResult['tf'] || commandResult['TF']);
           let lambdaBText = '';
           if (!isNaN(bf) && !isNaN(tf) && tf !== 0) {
             const lambdaB = bf / (2 * tf);
@@ -324,7 +385,7 @@
           }
           document.getElementById('lambdaBResult').innerHTML = lambdaBText;
           let tableHTML = '<table class="result-table">';
-          for (const [key, value] of Object.entries(result)) {
+          for (const [key, value] of Object.entries(commandResult)) {
             tableHTML += `
               <tr>
                 <td style="background-color: #fff3e0 !important;">${key.trim()}</td>
@@ -333,14 +394,13 @@
             `;
           }
           tableHTML += '</table>';
-          newResult.innerHTML += tableHTML;
+          outputDiv.innerHTML = `
+            <div class="search-header">&gt; ${command}</div>
+            <button class="copy-button" onclick="copyTableToClipboard(this)">Copy to Excel</button>
+          ` + tableHTML;
         } else {
-          newResult.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+          outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
         }
-
-        // Prepend the new result to the output
-        outputDiv.insertBefore(newResult, outputDiv.firstChild);
-        suggestionsDiv.style.display = 'none';
       } else if (e.key === 'Escape') {
         suggestionsDiv.style.display = 'none';
       }
