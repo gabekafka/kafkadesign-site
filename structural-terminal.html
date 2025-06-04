@@ -1,5 +1,27 @@
   <!-- ... earlier HTML (HEAD, styles, body, terminal/guide markup) ... -->
 
+  <!-- Terminal UI Structure -->
+  <div class="terminal">
+    <div class="terminal-input-container">
+      <div class="prompt">
+        <span>&gt;</span>
+        <input id="terminalInput" type="text" placeholder="Loading data…" autofocus />
+      </div>
+      <div id="suggestions" class="suggestions" style="display: none;"></div>
+    </div>
+    <div id="terminalOutput" style="margin-top: 1rem;"></div>
+  </div>
+  <div class="guide">
+    <h2>Quick Guide</h2>
+    <p>Type commands here…</p>
+    <ul>
+      <li><strong>W&lt;d&gt;X&lt;w&gt;</strong> &mdash; show W-shape properties</li>
+      <li><strong>MC&lt;d&gt;X&lt;w&gt;</strong> &mdash; show MC-shape properties</li>
+      <!-- Add more instructions as needed -->
+    </ul>
+  </div>
+  <div class="vertical-divider"></div>
+
   <script>
     // 1) Two in-memory objects and their “loaded” flags
     let wShapeData = {}, wShapeLoaded = false;
