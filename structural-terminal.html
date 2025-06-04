@@ -200,13 +200,16 @@
         const nameKey = Object.keys(rows[0]).find(k => k.trim().toUpperCase() === "NAME");
 
         wShapeData = Object.fromEntries(
-          rows.map(row => [
-            row[nameKey]?.trim().toUpperCase(),
-            row
-          ])
+          rows
+            .filter(row => row[nameKey]) // Only rows with a name
+            .map(row => [
+              row[nameKey].replace(/\s+/g, '').toUpperCase(), // Remove all spaces and uppercase
+              row
+            ])
         );
 
         console.log("Loaded W-shapes:", Object.keys(wShapeData));
+        console.log("First 10 keys:", Object.keys(wShapeData).slice(0, 10));
         wShapeLoaded = true;
       }
     });
