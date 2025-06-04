@@ -211,6 +211,7 @@
     let lastMember = null; // Store the most recent member key
     let lrPromptState = null; // Track Lr prompt state
     let lrInputs = {};
+    let lastE = 29000; // Default E value
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -309,30 +310,33 @@
           lastMember = memberKey;
           lrPromptState = 'E';
           lrInputs = {};
-          outputDiv.innerHTML += `<div>&gt; ${command}</div><div>Enter E (ksi):</div>`;
+          outputDiv.innerHTML += `<div>&gt; ${command}</div><div>Enter E (ksi) [default: 29000]:</div>`;
           return;
         }
 
         // Handle Lr prompt flow
         if (lrPromptState) {
           if (lrPromptState === 'E') {
-            lrInputs.E = parseFloat(command);
+            lrInputs.E = parseFloat(command) || 29000;
+            lastE = lrInputs.E;
             if (isNaN(lrInputs.E) || lrInputs.E <= 0) {
               outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid E (ksi):</div>`;
               return;
             }
             lrPromptState = 'Fy';
-            outputDiv.innerHTML += `<div>E = ${lrInputs.E}</div><div>Enter Fy (ksi):</div>`;
+            // Prompt for Fy at the top
+            outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>` + outputDiv.innerHTML;
             return;
           }
           if (lrPromptState === 'Fy') {
             lrInputs.Fy = parseFloat(command);
             if (isNaN(lrInputs.Fy) || lrInputs.Fy <= 0) {
+              outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>` + outputDiv.innerHTML;
               outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
               return;
             }
             lrPromptState = 'c';
-            outputDiv.innerHTML += `<div>Fy = ${lrInputs.Fy}</div><div>Enter c (default 1):</div>`;
+            outputDiv.innerHTML += `<div>Fy = ${lrInputs.Fy} (ksi)</div><div>Enter c (default 1):</div>`;
             return;
           }
           if (lrPromptState === 'c') {
