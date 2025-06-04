@@ -184,17 +184,32 @@
           // First, check W shapes:
           if (wShapeData && wShapeData[rawValue]) {
             const shapeObj = wShapeData[rawValue];
-            // Convert to a pretty‐printed string:
-            const pretty = JSON.stringify(shapeObj, null, 2);
-            printLine(pretty);
+            // Print each key/value pair as “key<TAB>value”
+            Object.entries(shapeObj).forEach(([key, val]) => {
+              printLine(`${key}\t${val}`);
+            });
+            // Add a Copy to Excel button
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(shapeObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
             return;
           }
 
           // Next, check MC shapes:
           if (mcShapeData && mcShapeData[rawValue]) {
             const shapeObj = mcShapeData[rawValue];
-            const pretty = JSON.stringify(shapeObj, null, 2);
-            printLine(pretty);
+            // Print each key/value pair as “key<TAB>value”
+            Object.entries(shapeObj).forEach(([key, val]) => {
+              printLine(`${key}\t${val}`);
+            });
+            // Add a Copy to Excel button
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(shapeObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
             return;
           }
 
@@ -202,6 +217,26 @@
           printLine(`Shape “${rawValue}” not found.`, "error");
         }
       });
+
+    // ------------------------------------------------------------------------
+    // 8) Copy-to-clipboard for last printed shape
+    //    Creates tab-separated lines “key<TAB>value” for Excel.
+    // ------------------------------------------------------------------------
+    function copyLastShapeToClipboard(shapeObj) {
+      const lines = Object.entries(shapeObj).map(
+        ([key, val]) => `${key}\t${val}`
+      );
+      const text = lines.join("\n");
+      // Create a temporary textarea to copy from
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      // Optional feedback
+      printLine("(Copied to clipboard)", "loading");
+    }
 
     // ------------------------------------------------------------------------
     // 7) Show suggestions as user types (optional enhancement)
