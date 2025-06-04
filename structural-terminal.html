@@ -189,6 +189,7 @@
     let lastE = 29000; // Default E value
     let lambdaPromptState = null;
     let lambdaInputs = {};
+    let wShapeLoaded = false;
 
     // Load and parse CSV using PapaParse
     Papa.parse('assets/data/w-member-data.csv', {
@@ -206,6 +207,7 @@
         );
 
         console.log("Loaded W-shapes:", Object.keys(wShapeData));
+        wShapeLoaded = true;
       }
     });
 
@@ -275,6 +277,10 @@
 
     // Handle keyboard navigation
     input.addEventListener('keydown', (e) => {
+      if (!wShapeLoaded) {
+        outputDiv.innerHTML = `<div style="color: orange;">⏳ Loading shape data, please wait...</div>`;
+        return;
+      }
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         const items = suggestionsDiv.getElementsByClassName('suggestion-item');
