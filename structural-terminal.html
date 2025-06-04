@@ -2,107 +2,206 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Structural Terminal (Dark Tile Theme)</title>
+  <title>Structural Terminal</title>
+  <style>
+    /* Basic “dark terminal” styling – adjust to taste */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Menlo, Consolas, Monaco, monospace;
+      background-color: #1e1e1e;
+      color: #ffffff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-  <!-- 1) Link to an external CSS file (you can also inline this if you prefer) -->
-  <link rel="stylesheet" href="css/styles.css" />
+    #terminalOutput {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      border-bottom: 1px solid #333;
+    }
+
+    #terminalInput {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #252526;
+      color: #c5c5c5;
+      border: none;
+      border-top: 1px solid #333;
+      outline: none;
+    }
+
+    #terminalInput:disabled {
+      color: #555;
+      background-color: #2d2d2d;
+    }
+
+    .prompt-line {
+      display: flex;
+      align-items: center;
+    }
+
+    .prompt-line > span.prompt-symbol {
+      margin-right: 6px;
+      color: #00ff00; /* green “>” */
+    }
+
+    .output-line {
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      color: #cccccc;
+    }
+
+    .error {
+      color: #f44747; /* red */
+    }
+  </style>
 </head>
 <body>
-  <!-- 
-    2) Wrap everything in a "page-container" with a dark background.
-       We'll use CSS Grid to lay out the terminal and the guide side by side,
-       and let the "output tile" expand below.
-  -->
-  <div class="page-container">
-    <!-- LEFT COLUMN: Input + Suggestions -->
-    <div class="panel input-panel">
-      <div class="prompt-row">
-        <span class="prompt-symbol">&gt;</span>
-        <input id="terminalInput" class="prompt-input" type="text" placeholder="Loading data…" disabled />
-      </div>
 
-      <div id="suggestions" class="suggestions-panel">
-        <!-- Suggestion items will be injected here -->
-      </div>
-    </div>
-
-    <!-- MIDDLE COLUMN: Output “tiles” will show up here -->
-    <!-- We’ll append each new command‐output as its own "output-tile" in this container. -->
-    <div id="outputContainer" class="panel output-grid">
-      <!-- Example of a “tile” (you can append many of these) -->
-      <!--
-      <div class="output-tile">
-        <div class="tile-header">&gt; W12X16</div>
-        <table class="result-table">
-          <tr><td>bf</td><td>4.00</td></tr>
-          <tr><td>tf</td><td>0.31</td></tr>
-          <!-- ...more rows... -->
-        </table>
-      </div>
-      -->
-    </div>
-
-    <!-- RIGHT COLUMN: Quick Guide / Instructions -->
-    <div class="panel guide-panel">
-      <h2>Quick Guide</h2>
-      <ul class="guide-list">
-        <li><strong>W&lt;d&gt;X&lt;w&gt;</strong> &mdash; show W‐shape properties</li>
-        <li><strong>MC&lt;d&gt;X&lt;w&gt;</strong> &mdash; show MC‐shape properties</li>
-        <li><strong>W&lt;d&gt;X&lt;w&gt; LR</strong> &mdash; prompt for Fy, then show L<sub>r</sub></li>
-        <li><strong>W&lt;d&gt;X&lt;w&gt; Lp</strong> &mdash; prompt for Fy, then show L<sub>p</sub></li>
-      </ul>
+  <!-- Output area -->
+  <div id="terminalOutput">
+    <!-- Initial “loading” message: -->
+    <div class="prompt-line loading">
+      <span class="prompt-symbol">&gt;</span>
+      <span>Loading data…</span>
     </div>
   </div>
 
-  <!-- 3) Your existing JavaScript (unchanged logic, but it will now write into #outputContainer) -->
+  <!-- Input field: disabled until both JSONs load -->
+  <input
+    type="text"
+    id="terminalInput"
+    placeholder="(Loading…)"
+    disabled
+    autocomplete="off"
+  />
+
+  <!-- All JavaScript lives here -->
   <script>
-    // … All of your previous JS (fetching JSON, showSuggestions, Enter key logic, etc.) …
+    // ------------------------------------------------------------------------
+    // 1) Variables to hold loaded JSON data and “loaded” flags:
+    // ------------------------------------------------------------------------
+    let wShapeData = null;
+    let mcShapeData = null;
+    let wShapeLoaded = false;
+    let mcShapeLoaded = false;
 
-    // A small rewrite of how we display a result: instead of writing into a single #terminalOutput,
-    // we create a “tile” <div> for each new command and append it to #outputContainer.
+    // ------------------------------------------------------------------------
+    // 2) Utility: print a new line of text into #terminalOutput
+    //    - argument `text` can be a string (plain text) or
+    //      an HTML‐formatted string if you want color, etc.
+    // ------------------------------------------------------------------------
+    function printLine(text, cssClass = "output-line") {
+      const outDiv = document.getElementById("terminalOutput");
+      const line = document.createElement("div");
+      line.className = cssClass;
+      line.innerText = text;
+      outDiv.appendChild(line);
 
-    function displayResultTile(command, sourceType, dataObj) {
-      // Create a new tile wrapper
-      const tile = document.createElement('div');
-      tile.className = 'output-tile';
-
-      // 1) Header row with the prompt
-      const header = document.createElement('div');
-      header.className = 'tile-header';
-      header.innerHTML = `&gt; ${command} <span class="source-label">(${sourceType}-shape)</span>`;
-      tile.appendChild(header);
-
-      // 2) If dataObj is a plain field list, build a table
-      const table = document.createElement('table');
-      table.className = 'result-table';
-      Object.entries(dataObj).forEach(([key, val]) => {
-        const row = document.createElement('tr');
-        const c1 = document.createElement('td');
-        c1.textContent = key;
-        const c2 = document.createElement('td');
-        c2.textContent = val;
-        row.append(c1, c2);
-        table.appendChild(row);
-      });
-      tile.appendChild(table);
-
-      // 3) Copy-to-Clipboard button
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'copy-button';
-      copyBtn.textContent = 'Copy to Excel';
-      copyBtn.onclick = function() { copyTableToClipboard(copyBtn); };
-      tile.appendChild(copyBtn);
-
-      // 4) Finally, append this tile to the grid container
-      document.getElementById('outputContainer').prepend(tile);
-      // We prepend so that newest tiles appear at the top. Use appendChild(...) if you prefer bottom-up.
+      // Scroll to bottom whenever a new line is printed
+      outDiv.scrollTop = outDiv.scrollHeight;
     }
 
-    // Then, in your Enter‐key handler, instead of writing to #terminalOutput, call displayResultTile(...)
-    // For example, replace:
-    //    outputDiv.innerHTML = `<div class="search-header">…</div> …`
-    // with:
-    //    displayResultTile(cmd, sourceType, dataObj);
+    // ------------------------------------------------------------------------
+    // 3) After BOTH JSONs have loaded, enable the input:
+    // ------------------------------------------------------------------------
+    function tryEnableInput() {
+      if (wShapeLoaded && mcShapeLoaded) {
+        const input = document.getElementById("terminalInput");
+        input.disabled = false;
+        input.placeholder = "Search a shape (e.g. W12X16)…";
+        input.focus();
+
+        // Remove the initial “Loading data…” line:
+        document.getElementById("terminalOutput").innerHTML = "";
+        // Print a welcome message now that data is available:
+        printLine("> Data loaded. Type a shape name and press Enter.");
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 4) Fetch W‐section JSON
+    // ------------------------------------------------------------------------
+    fetch("js/w-member-data.json")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`W JSON HTTP ${resp.status}`);
+        return resp.json();
+      })
+      .then((json) => {
+        wShapeData = json;
+        wShapeLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading W JSON:", err);
+        // Show an error on screen:
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load W‐member JSON.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 5) Fetch MC‐section JSON
+    // ------------------------------------------------------------------------
+    fetch("js/mc-member-data.json")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`MC JSON HTTP ${resp.status}`);
+        return resp.json();
+      })
+      .then((json) => {
+        mcShapeData = json;
+        mcShapeLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading MC JSON:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load MC‐member JSON.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 6) Handle “Enter” key presses in the input
+    //    - When user types e.g. “W12X16” and presses Enter, look it up.
+    //    - If found in wShapeData, print the full JSON object for that shape.
+    //    - Otherwise, check mcShapeData for a matching key.
+    //    - If still not found, print “Not found.”
+    // ------------------------------------------------------------------------
+    document
+      .getElementById("terminalInput")
+      .addEventListener("keydown", function (evt) {
+        if (evt.key === "Enter") {
+          const rawValue = this.value.trim().toUpperCase();
+          this.value = ""; // clear input
+          if (!rawValue) return;
+
+          // Print the prompt line with the user’s request
+          printLine(`> ${rawValue}`, "prompt-line");
+
+          // First, check W shapes:
+          if (wShapeData && wShapeData[rawValue]) {
+            const shapeObj = wShapeData[rawValue];
+            // Convert to a pretty‐printed string:
+            const pretty = JSON.stringify(shapeObj, null, 2);
+            printLine(pretty);
+            return;
+          }
+
+          // Next, check MC shapes:
+          if (mcShapeData && mcShapeData[rawValue]) {
+            const shapeObj = mcShapeData[rawValue];
+            const pretty = JSON.stringify(shapeObj, null, 2);
+            printLine(pretty);
+            return;
+          }
+
+          // If not found in either:
+          printLine(`Shape “${rawValue}” not found.`, "error");
+        }
+      });
   </script>
 </body>
 </html>
