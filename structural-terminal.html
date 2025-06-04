@@ -100,6 +100,11 @@
     const lrE = 29000;        // default E (ksi)
     let lrFy = null;
 
+    // Variables for Lp calculation state
+    let lpState = null;       // null or "awaitingFyLP"
+    let lpShapeObj = null;
+    const lpE = 29000;        // default E (ksi) for LP
+
     // ------------------------------------------------------------------------
     // 2) Utility: print a new line of text into #terminalOutput
     //    - argument `text` can be a string (plain text) or
@@ -186,6 +191,28 @@
           // Print the prompt line with the user’s request
           printLine(`> ${rawValue}`, "prompt-line");
 
+          // ----- Lp state machine -----
+          // If waiting for Fy for LP, parse it and compute Lp:
+          if (lpState === "awaitingFyLP") {
+            const fyVal = parseFloat(rawValue);
+            if (isNaN(fyVal) || fyVal <= 0) {
+              printLine("❌ Please enter a valid numeric Fy.", "error");
+              return;
+            }
+            // Compute Lp via Lp = 1.76 * r_y * sqrt(E/Fy)
+            const shapeObj = lpShapeObj;
+            const ry = parseFloat(shapeObj["ry"]);
+            const Lp_in = 1.76 * ry * Math.sqrt(lpE / fyVal);
+            const Lp_ft = Lp_in / 12;
+            printLine(`Lp = ${Lp_ft.toFixed(2)} ft (for Fy=${fyVal})`);
+            // Clear prompt and reset Lp state
+            document.getElementById("interactivePrompt").innerText = "";
+            lpState = null;
+            lpShapeObj = null;
+            return;
+          }
+          // ----- End Lp state machine -----
+
           // ----- Lr state machine -----
           // If we’re waiting for Fy, parse it now:
           if (lrState === "awaitingFy") {
@@ -240,6 +267,23 @@
             lrState = "awaitingFy";
             document.getElementById("interactivePrompt").innerText = "";
             printLine(`E (ksi) default = ${lrE}`);
+            document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
+            return;
+          }
+
+          // Detect “<W##X##> LP” command to start Lp flow:
+          const lpMatch = rawValue.match(/^(W\d+X\d+)\s+LP$/i);
+          if (lpMatch && wShapeData) {
+            const wk = lpMatch[1];
+            if (!wShapeData[wk]) {
+              printLine(`❌ Shape not found: ${wk}`, "error");
+              return;
+            }
+            // Initialize Lp sequence
+            lpShapeObj = wShapeData[wk];
+            lpState = "awaitingFyLP";
+            document.getElementById("interactivePrompt").innerText = "";
+            printLine(`E (ksi) default = ${lpE}`);
             document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
             return;
           }
