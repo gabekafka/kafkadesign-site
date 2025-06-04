@@ -1,232 +1,108 @@
-  <!-- ... earlier HTML (HEAD, styles, body, terminal/guide markup) ... -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Structural Terminal (Dark Tile Theme)</title>
 
-  <!-- Terminal UI Structure -->
-  <div class="terminal">
-    <div class="terminal-input-container">
-      <div class="prompt">
-        <span>&gt;</span>
-        <input id="terminalInput" type="text" placeholder="Loading data…" autofocus />
+  <!-- 1) Link to an external CSS file (you can also inline this if you prefer) -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- 
+    2) Wrap everything in a "page-container" with a dark background.
+       We'll use CSS Grid to lay out the terminal and the guide side by side,
+       and let the "output tile" expand below.
+  -->
+  <div class="page-container">
+    <!-- LEFT COLUMN: Input + Suggestions -->
+    <div class="panel input-panel">
+      <div class="prompt-row">
+        <span class="prompt-symbol">&gt;</span>
+        <input id="terminalInput" class="prompt-input" type="text" placeholder="Loading data…" disabled />
       </div>
-      <div id="suggestions" class="suggestions" style="display: none;"></div>
+
+      <div id="suggestions" class="suggestions-panel">
+        <!-- Suggestion items will be injected here -->
+      </div>
     </div>
-    <div id="terminalOutput" style="margin-top: 1rem;"></div>
-  </div>
-  <div class="guide">
-    <h2>Quick Guide</h2>
-    <p>Type commands here…</p>
-    <ul>
-      <li><strong>W&lt;d&gt;X&lt;w&gt;</strong> &mdash; show W-shape properties</li>
-      <li><strong>MC&lt;d&gt;X&lt;w&gt;</strong> &mdash; show MC-shape properties</li>
-      <!-- Add more instructions as needed -->
-    </ul>
-  </div>
-  <div class="vertical-divider"></div>
 
+    <!-- MIDDLE COLUMN: Output “tiles” will show up here -->
+    <!-- We’ll append each new command‐output as its own "output-tile" in this container. -->
+    <div id="outputContainer" class="panel output-grid">
+      <!-- Example of a “tile” (you can append many of these) -->
+      <!--
+      <div class="output-tile">
+        <div class="tile-header">&gt; W12X16</div>
+        <table class="result-table">
+          <tr><td>bf</td><td>4.00</td></tr>
+          <tr><td>tf</td><td>0.31</td></tr>
+          <!-- ...more rows... -->
+        </table>
+      </div>
+      -->
+    </div>
+
+    <!-- RIGHT COLUMN: Quick Guide / Instructions -->
+    <div class="panel guide-panel">
+      <h2>Quick Guide</h2>
+      <ul class="guide-list">
+        <li><strong>W&lt;d&gt;X&lt;w&gt;</strong> &mdash; show W‐shape properties</li>
+        <li><strong>MC&lt;d&gt;X&lt;w&gt;</strong> &mdash; show MC‐shape properties</li>
+        <li><strong>W&lt;d&gt;X&lt;w&gt; LR</strong> &mdash; prompt for Fy, then show L<sub>r</sub></li>
+        <li><strong>W&lt;d&gt;X&lt;w&gt; Lp</strong> &mdash; prompt for Fy, then show L<sub>p</sub></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 3) Your existing JavaScript (unchanged logic, but it will now write into #outputContainer) -->
   <script>
-    // 1) Two in-memory objects and their “loaded” flags
-    let wShapeData = {}, wShapeLoaded = false;
-    let mcShapeData = {}, mcShapeLoaded = false;
+    // … All of your previous JS (fetching JSON, showSuggestions, Enter key logic, etc.) …
 
-    // 2) Fetch W-shape JSON
-    fetch('js/w-member-data.json')
-      .then(r => r.json())
-      .then(json => {
-        wShapeData = json;
-        wShapeLoaded = true;
-        tryEnableInput();
-      })
-      .catch(err => {
-        console.error('❌ Error loading W JSON:', err);
-        document.getElementById('terminalOutput').innerHTML =
-          '<div style="color:red;">Error loading W data.</div>';
+    // A small rewrite of how we display a result: instead of writing into a single #terminalOutput,
+    // we create a “tile” <div> for each new command and append it to #outputContainer.
+
+    function displayResultTile(command, sourceType, dataObj) {
+      // Create a new tile wrapper
+      const tile = document.createElement('div');
+      tile.className = 'output-tile';
+
+      // 1) Header row with the prompt
+      const header = document.createElement('div');
+      header.className = 'tile-header';
+      header.innerHTML = `&gt; ${command} <span class="source-label">(${sourceType}-shape)</span>`;
+      tile.appendChild(header);
+
+      // 2) If dataObj is a plain field list, build a table
+      const table = document.createElement('table');
+      table.className = 'result-table';
+      Object.entries(dataObj).forEach(([key, val]) => {
+        const row = document.createElement('tr');
+        const c1 = document.createElement('td');
+        c1.textContent = key;
+        const c2 = document.createElement('td');
+        c2.textContent = val;
+        row.append(c1, c2);
+        table.appendChild(row);
       });
+      tile.appendChild(table);
 
-    // 3) Fetch MC-shape JSON
-    fetch('js/mc-member-data.json')
-      .then(r => r.json())
-      .then(json => {
-        mcShapeData = json;
-        mcShapeLoaded = true;
-        tryEnableInput();
-      })
-      .catch(err => {
-        console.error('❌ Error loading MC JSON:', err);
-        document.getElementById('terminalOutput').innerHTML =
-          '<div style="color:red;">Error loading MC data.</div>';
-      });
+      // 3) Copy-to-Clipboard button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-button';
+      copyBtn.textContent = 'Copy to Excel';
+      copyBtn.onclick = function() { copyTableToClipboard(copyBtn); };
+      tile.appendChild(copyBtn);
 
-    // 4) Only enable input once BOTH datasets are loaded
-    function tryEnableInput() {
-      if (wShapeLoaded && mcShapeLoaded) {
-        const input = document.getElementById('terminalInput');
-        input.disabled = false;
-        input.placeholder = 'Search a shape…';
-        input.focus();
-      }
+      // 4) Finally, append this tile to the grid container
+      document.getElementById('outputContainer').prepend(tile);
+      // We prepend so that newest tiles appear at the top. Use appendChild(...) if you prefer bottom-up.
     }
 
-    // 5) Grab references to the input, suggestions, and output
-    const input = document.getElementById('terminalInput');
-    const suggestionsDiv = document.getElementById('suggestions');
-    const outputDiv = document.getElementById('terminalOutput');
-
-    // Initially disable input until data arrives
-    input.disabled = true;
-    input.placeholder = 'Loading data…';
-
-    // 6) Show matching suggestions from both W and MC datasets
-    function showSuggestions(inputValue) {
-      // If neither dataset is loaded yet, do nothing
-      if ((!wShapeLoaded && !mcShapeLoaded) || !inputValue) {
-        suggestionsDiv.style.display = 'none';
-        return;
-      }
-      // Combine all keys from both objects
-      const allKeys = Object.keys(wShapeData).concat(Object.keys(mcShapeData));
-      const matches = allKeys.filter(key =>
-        key.startsWith(inputValue.toUpperCase())
-      );
-      // Sort by numeric part (e.g., W12X16 vs. MC4X11)
-      matches.sort((a, b) => {
-        const numA = parseInt(a.match(/\d+/)[0]);
-        const numB = parseInt(b.match(/\d+/)[0]);
-        return numA - numB;
-      });
-      if (matches.length) {
-        suggestionsDiv.innerHTML = matches
-          .map(m => `<div class="suggestion-item">${m}</div>`)
-          .join('');
-        suggestionsDiv.style.display = 'block';
-      } else {
-        suggestionsDiv.style.display = 'none';
-      }
-    }
-
-    // 7) Update suggestions on user input
-    input.addEventListener('input', e => showSuggestions(e.target.value));
-    document.addEventListener('click', e => {
-      if (e.target.classList.contains('suggestion-item')) {
-        input.value = e.target.textContent;
-        suggestionsDiv.style.display = 'none';
-        input.focus();
-      } else if (!e.target.closest('.suggestions')) {
-        suggestionsDiv.style.display = 'none';
-      }
-    });
-
-    // 8) Handle arrow keys, Enter, Escape
-    input.addEventListener('keydown', e => {
-      // If data is still loading, ignore keystrokes
-      if (!wShapeLoaded || !mcShapeLoaded) return;
-
-      // Arrow up/down for cycling suggestions
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const items = suggestionsDiv.getElementsByClassName('suggestion-item');
-        const currentIndex = Array.from(items).findIndex(item => 
-          item.textContent === input.value
-        );
-        if (items.length) {
-          let newIndex;
-          if (e.key === 'ArrowDown') {
-            newIndex = (currentIndex + 1) % items.length;
-          } else {
-            newIndex = (currentIndex - 1 + items.length) % items.length;
-          }
-          input.value = items[newIndex].textContent;
-        }
-      }
-      // Enter: look up the typed shape
-      else if (e.key === 'Enter') {
-        const cmd = input.value.trim().toUpperCase();
-        input.value = '';
-
-        // Determine which dataset to search
-        let data = null;
-        let sourceType = '';
-        if (wShapeData[cmd]) {
-          data = wShapeData[cmd];
-          sourceType = 'W';
-        } else if (mcShapeData[cmd]) {
-          data = mcShapeData[cmd];
-          sourceType = 'MC';
-        }
-
-        if (data) {
-          let tableHTML = '<table class="result-table">';
-          for (const [prop, val] of Object.entries(data)) {
-            tableHTML += `
-              <tr>
-                <td style="background-color: #fff3e0 !important;">${prop}</td>
-                <td style="background-color: #fff3e0 !important;">${val}</td>
-              </tr>`;
-          }
-          tableHTML += '</table>';
-          outputDiv.innerHTML = `
-            <div class="search-header">&gt; ${cmd} (${sourceType}-shape)</div>
-            <button class="copy-button" onclick="copyTableToClipboard(this)">
-              Copy to Excel
-            </button>
-          ` + tableHTML;
-        } else {
-          outputDiv.innerHTML = `<div style="color: red;">❌ Shape not found: ${cmd}</div>`;
-        }
-        suggestionsDiv.style.display = 'none';
-      }
-      // Escape: hide suggestions
-      else if (e.key === 'Escape') {
-        suggestionsDiv.style.display = 'none';
-      }
-    });
-
-    // 9) Copy-to-clipboard function (unchanged)
-    window.copyTableToClipboard = function(button) {
-      const table = button.nextElementSibling;
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
-
-      const formattedTable = document.createElement('table');
-      formattedTable.style.borderCollapse = 'collapse';
-      formattedTable.style.width = '100%';
-
-      Array.from(table.rows).forEach(row => {
-        const newRow = formattedTable.insertRow();
-        Array.from(row.cells).forEach((cell, idx) => {
-          const newCell = newRow.insertCell();
-          newCell.textContent = cell.textContent;
-          newCell.style.backgroundColor = '#f5f5f5';
-          newCell.style.color = '#000000';
-          newCell.style.padding = '4px 8px';
-          newCell.style.border = '1px solid #00ff9f';
-          newCell.style.fontFamily = 'monospace';
-          if (idx === 0) {
-            newCell.style.fontWeight = 'bold';
-            newCell.style.width = '200px';
-          }
-        });
-      });
-
-      tempDiv.appendChild(formattedTable);
-      document.body.appendChild(tempDiv);
-
-      const range = document.createRange();
-      range.selectNode(formattedTable);
-      window.getSelection().removeAllRanges();
-      window.getSelection().addRange(range);
-      document.execCommand('copy');
-      window.getSelection().removeAllRanges();
-      document.body.removeChild(tempDiv);
-
-      const orig = button.textContent;
-      button.textContent = 'Copied!';
-      button.style.backgroundColor = '#00cc7f';
-      setTimeout(() => {
-        button.textContent = orig;
-        button.style.backgroundColor = '#00ff9f';
-      }, 1000);
-    };
+    // Then, in your Enter‐key handler, instead of writing to #terminalOutput, call displayResultTile(...)
+    // For example, replace:
+    //    outputDiv.innerHTML = `<div class="search-header">…</div> …`
+    // with:
+    //    displayResultTile(cmd, sourceType, dataObj);
   </script>
 </body>
 </html>

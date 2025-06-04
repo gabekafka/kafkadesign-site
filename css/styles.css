@@ -1,0 +1,189 @@
+/* ===========================
+   Global Page Styles
+   =========================== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Consolas', monospace;
+  background-color: #1b1b1b;       /* Very dark background */
+  color: #e0e0e0;                  /* Light gray text by default */
+}
+
+/* ===========================
+   Grid Layout for Entire Page
+   =========================== */
+.page-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;  /* Input / Output grid / Guide */
+  grid-gap: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  height: 100vh;
+}
+
+/* Each column is a “panel” with minimal padding */
+.panel {
+  background-color: #252525;   /* Slightly lighter than body */
+  border-radius: 4px;
+  padding: 0.75rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===========================
+   Input Panel (Left Column)
+   =========================== */
+.input-panel {
+  max-width: 100%;
+}
+
+/* Prompt row: “> [input]” */
+.prompt-row {
+  display: flex;
+  align-items: center;
+  background-color: #1e1e1e;    /* Dark box */
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  border: 1px solid #333;
+}
+
+.prompt-symbol {
+  color: #00ff9f;   /* Bright green */
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 1rem;
+  font-family: 'Consolas', monospace;
+}
+
+/* Suggestions: each suggestion is a clickable tile */
+.suggestions-panel {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  background-color: #2a2a2a;
+  margin-bottom: 0.25rem;
+  padding: 0.4rem;
+  border-radius: 3px;
+  color: #00ff9f;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #333333;
+}
+
+/* ===========================
+   Output Grid (Middle Column)
+   =========================== */
+.output-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* flexible tiles */
+  grid-auto-rows: auto;
+  gap: 1rem;
+  overflow-y: auto;
+  padding-bottom: 0.5rem;
+}
+
+/* Each individual tile */
+.output-tile {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-header {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #00ff9f;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.source-label {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+/* Table of results inside a tile */
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+.result-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.result-table tr:nth-child(even) td {
+  background-color: #2a2a2a;
+}
+
+.result-table tr:nth-child(odd) td {
+  background-color: #282828;
+}
+
+/* Copy button styling */
+.copy-button {
+  align-self: flex-end;
+  background-color: #00ff9f;
+  color: #1e1e1e;
+  border: none;
+  border-radius: 3px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-top: auto;
+}
+
+.copy-button:hover {
+  background-color: #00cc7f;
+}
+
+/* ===========================
+   Guide Panel (Right Column)
+   =========================== */
+.guide-panel h2 {
+  margin-top: 0;
+  color: #ffffff;
+}
+
+.guide-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.guide-list li {
+  margin-bottom: 0.5rem;
+  color: #ccc;
+}
+
+.guide-list li strong {
+  color: #00ff9f;
+}
+
+/* Vertical divider (if needed) */
+.vertical-divider {
+  width: 1px;
+  background-color: #333;
+  margin: 0 0.5rem;
+}
