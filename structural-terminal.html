@@ -63,15 +63,6 @@
 </head>
 <body>
 
-  <!-- Output area -->
-  <div id="terminalOutput">
-    <!-- Initial “loading” message: -->
-    <div class="prompt-line loading">
-      <span class="prompt-symbol">&gt;</span>
-      <span>Loading data…</span>
-    </div>
-  </div>
-
   <!-- Input field: disabled until both JSONs load -->
   <input
     type="text"
@@ -80,6 +71,15 @@
     disabled
     autocomplete="off"
   />
+
+  <!-- Output area -->
+  <div id="terminalOutput">
+    <!-- Initial “loading” message: -->
+    <div class="prompt-line loading">
+      <span class="prompt-symbol">&gt;</span>
+      <span>Loading data…</span>
+    </div>
+  </div>
 
   <!-- All JavaScript lives here -->
   <script>
