@@ -174,10 +174,6 @@
 
     // ------------------------------------------------------------------------
     // 6) Handle “Enter” key presses in the input
-    //    - When user types e.g. “W12X16” and presses Enter, look it up.
-    //    - If found in wShapeData, print the full JSON object for that shape.
-    //    - Otherwise, check mcShapeData for a matching key.
-    //    - If still not found, print “Not found.”
     // ------------------------------------------------------------------------
     document
       .getElementById("terminalInput")
@@ -211,16 +207,14 @@
               printLine("❌ Please enter a valid numeric c.", "error");
               return;
             }
-            // Compute Lr using formula:
+            // Compute Lr using rts from JSON and separate J and c:
             const shapeObj = lrShapeObj;
-            const d = parseFloat(shapeObj["d"]);
-            const tf = parseFloat(shapeObj["tf"]);
-            const ho = d - tf;
+            const rts_orig = parseFloat(shapeObj["rts"]);
+            const r_ts = rts_orig * Math.sqrt(cVal);
+            const ho = parseFloat(shapeObj["d"]) - parseFloat(shapeObj["tf"]);
             const Sx = parseFloat(shapeObj["Sx"]);
             const J = parseFloat(shapeObj["J"]);
-            const Jc = J * cVal;
-            const r_ts = Math.sqrt(Jc / (Sx * ho));
-            const term = (0.7 * lrFy / lrE) * (Sx * ho) / Jc;
+            const term = (0.7 * lrFy / lrE) * ((Sx * ho) / (J * cVal));
             const inside = 1 + Math.sqrt(1 + 6.76 * Math.pow(term, 2));
             const Lr = 1.95 * r_ts * Math.sqrt(lrE / (0.7 * lrFy)) * Math.sqrt(inside);
             printLine(`Lr = ${Lr.toFixed(2)} in (for Fy=${lrFy}, c=${cVal})`);
@@ -243,7 +237,6 @@
             // Initialize Lr sequence
             lrShapeObj = wShapeData[wk];
             lrState = "awaitingFy";
-            // Clear any previous interactive prompt
             document.getElementById("interactivePrompt").innerText = "";
             printLine(`E (ksi) default = ${lrE}`);
             document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
@@ -252,14 +245,11 @@
 
           // First, check W shapes:
           if (wShapeData && wShapeData[rawValue]) {
-            // Clear interactive prompt for normal shape lookup
             document.getElementById("interactivePrompt").innerText = "";
             const shapeObj = wShapeData[rawValue];
-            // Print each key/value pair as “key<TAB>value”
             Object.entries(shapeObj).forEach(([key, val]) => {
               printLine(`${key}\t${val}`);
             });
-            // Add a Copy to Excel button
             const btn = document.createElement("button");
             btn.textContent = "Copy to Excel";
             btn.onclick = () => copyLastShapeToClipboard(shapeObj);
@@ -270,14 +260,11 @@
 
           // Next, check MC shapes:
           if (mcShapeData && mcShapeData[rawValue]) {
-            // Clear interactive prompt for normal shape lookup
             document.getElementById("interactivePrompt").innerText = "";
             const shapeObj = mcShapeData[rawValue];
-            // Print each key/value pair as “key<TAB>value”
             Object.entries(shapeObj).forEach(([key, val]) => {
               printLine(`${key}\t${val}`);
             });
-            // Add a Copy to Excel button
             const btn = document.createElement("button");
             btn.textContent = "Copy to Excel";
             btn.onclick = () => copyLastShapeToClipboard(shapeObj);
@@ -286,34 +273,32 @@
             return;
           }
 
-          // If not found in either:
+          // If not found:
           document.getElementById("interactivePrompt").innerText = "";
           printLine(`Shape “${rawValue}” not found.`, "error");
         }
       });
 
     // ------------------------------------------------------------------------
-    // 8) Copy-to-clipboard for last printed shape
-    //    Creates tab-separated lines “key<TAB>value” for Excel.
+    // Copy-to-clipboard for last printed shape
+    // Creates tab-separated lines “key<TAB>value” for Excel.
     // ------------------------------------------------------------------------
     function copyLastShapeToClipboard(shapeObj) {
       const lines = Object.entries(shapeObj).map(
         ([key, val]) => `${key}\t${val}`
       );
       const text = lines.join("\n");
-      // Create a temporary textarea to copy from
       const textarea = document.createElement("textarea");
       textarea.value = text;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      // Optional feedback
       printLine("(Copied to clipboard)", "loading");
     }
 
     // ------------------------------------------------------------------------
-    // 7) Show suggestions as user types (optional enhancement)
+    // Show suggestions as user types
     // ------------------------------------------------------------------------
     const suggestionsDiv = document.createElement("div");
     suggestionsDiv.style.position = "absolute";
@@ -342,13 +327,10 @@
           suggestionsDiv.style.display = 'none';
           return;
         }
-        // Combine keys from both data sets
         const allKeys = Object.keys(wShapeData).concat(Object.keys(mcShapeData));
         const matches = allKeys.filter(key =>
           key.startsWith(inputValue.toUpperCase())
         );
-        // Sort: For W-shapes, extract weight (second number) and sort ascending by weight.
-        // For non-W keys, fallback to sorting by the first numeric sequence.
         matches.sort((a, b) => {
           const wA = a.match(/^W(\d+)X(\d+)/i);
           const wB = b.match(/^W(\d+)X(\d+)/i);
@@ -357,10 +339,8 @@
             const weightB = parseInt(wB[2], 10);
             return weightA - weightB;
           }
-          // If only one is a W-shape, prefer that first
           if (wA && !wB) return -1;
           if (!wA && wB) return 1;
-          // Otherwise, fallback to first numeric sequence
           const numA = parseInt(a.match(/\d+/)[0], 10);
           const numB = parseInt(b.match(/\d+/)[0], 10);
           return numA - numB;
@@ -372,7 +352,6 @@
             .join("");
           suggestionsDiv.style.display = "block";
 
-          // Add click handlers to suggestions
           Array.from(suggestionsDiv.children).forEach((child, idx) => {
             child.addEventListener("click", () => {
               inputElem.value = matches[idx];
