@@ -72,9 +72,23 @@
     autocomplete="off"
   />
 
-  <!-- Instruction for Lr and Lp -->
+  <!-- Instruction for commands -->
   <div id="instructionText" style="position: absolute; top: 8px; right: 12px; padding: 4px 12px; color: #aaaaaa; font-size: 0.9rem;">
-    Type <code>W12X__ LR</code> or <code>W12X__ LP</code> to get values quickly.
+    <div><code>&lt;member&gt; &lt;command&gt;</code> &nbsp;&nbsp; Ex: <code>W12X16 LR</code></div>
+    <table style="margin-top:4px; border-collapse: collapse; width: 100%; color: #aaaaaa; font-size: 0.9rem;">
+      <tr>
+        <th style="text-align: left; padding: 2px 6px;">Command</th>
+        <th style="text-align: left; padding: 2px 6px;">Description</th>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>LR</code></td>
+        <td style="padding: 2px 6px;">Residual length limit (Lr)</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>LP</code></td>
+        <td style="padding: 2px 6px;">Plastic length limit (Lp)</td>
+      </tr>
+    </table>
   </div>
 
   <!-- Interactive prompt area (for Fy and c) -->
