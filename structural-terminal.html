@@ -72,6 +72,9 @@
     autocomplete="off"
   />
 
+  <!-- Interactive prompt area (for Fy and c) -->
+  <div id="interactivePrompt" style="padding: 4px 12px; color: #00ff00;"></div>
+
   <!-- Output area -->
   <div id="terminalOutput">
     <!-- Initial “loading” message: -->
@@ -197,7 +200,7 @@
             }
             lrFy = fyVal;
             lrState = "awaitingC";
-            printLine("Enter c (conservative):");
+            document.getElementById("interactivePrompt").innerText = "Enter c (conservative):";
             return;
           }
 
@@ -221,6 +224,8 @@
             const inside = 1 + Math.sqrt(1 + 6.76 * Math.pow(term, 2));
             const Lr = 1.95 * r_ts * Math.sqrt(lrE / (0.7 * lrFy)) * Math.sqrt(inside);
             printLine(`Lr = ${Lr.toFixed(2)} in (for Fy=${lrFy}, c=${cVal})`);
+            // Clear prompt after computing Lr
+            document.getElementById("interactivePrompt").innerText = "";
             lrState = null;
             lrShapeObj = null;
             return;
@@ -238,13 +243,17 @@
             // Initialize Lr sequence
             lrShapeObj = wShapeData[wk];
             lrState = "awaitingFy";
+            // Clear any previous interactive prompt
+            document.getElementById("interactivePrompt").innerText = "";
             printLine(`E (ksi) default = ${lrE}`);
-            printLine("Enter Fy (ksi):");
+            document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
             return;
           }
 
           // First, check W shapes:
           if (wShapeData && wShapeData[rawValue]) {
+            // Clear interactive prompt for normal shape lookup
+            document.getElementById("interactivePrompt").innerText = "";
             const shapeObj = wShapeData[rawValue];
             // Print each key/value pair as “key<TAB>value”
             Object.entries(shapeObj).forEach(([key, val]) => {
@@ -261,6 +270,8 @@
 
           // Next, check MC shapes:
           if (mcShapeData && mcShapeData[rawValue]) {
+            // Clear interactive prompt for normal shape lookup
+            document.getElementById("interactivePrompt").innerText = "";
             const shapeObj = mcShapeData[rawValue];
             // Print each key/value pair as “key<TAB>value”
             Object.entries(shapeObj).forEach(([key, val]) => {
@@ -276,6 +287,7 @@
           }
 
           // If not found in either:
+          document.getElementById("interactivePrompt").innerText = "";
           printLine(`Shape “${rawValue}” not found.`, "error");
         }
       });
