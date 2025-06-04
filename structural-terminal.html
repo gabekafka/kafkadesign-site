@@ -304,13 +304,13 @@
         if (lrMatch) {
           const memberKey = lrMatch[1].toUpperCase();
           if (!wShapeData[memberKey]) {
-            outputDiv.innerHTML += `<div>&gt; ${command}</div><div style="color: red;">❌ W-shape not found: ${memberKey}</div>`;
+            outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
             return;
           }
           lastMember = memberKey;
           lrPromptState = 'E';
           lrInputs = {};
-          outputDiv.innerHTML += `<div>&gt; ${command}</div><div>Enter E (ksi) [default: 29000]:</div>`;
+          outputDiv.innerHTML = `<div>&gt; ${command}</div><div>Enter E (ksi) [default: 29000]:</div>`;
           return;
         }
 
@@ -320,29 +320,26 @@
             lrInputs.E = parseFloat(command) || 29000;
             lastE = lrInputs.E;
             if (isNaN(lrInputs.E) || lrInputs.E <= 0) {
-              outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid E (ksi):</div>`;
+              outputDiv.innerHTML = `<div style='color:red;'>Please enter a valid E (ksi):</div>`;
               return;
             }
             lrPromptState = 'Fy';
-            // Prompt for Fy at the top
-            outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>` + outputDiv.innerHTML;
+            outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>`;
             return;
           }
           if (lrPromptState === 'Fy') {
             lrInputs.Fy = parseFloat(command);
             if (isNaN(lrInputs.Fy) || lrInputs.Fy <= 0) {
-              outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>` + outputDiv.innerHTML;
-              outputDiv.innerHTML += `<div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
+              outputDiv.innerHTML = `<div>Enter Fy (ksi):</div><div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
               return;
             }
             lrPromptState = 'c';
-            outputDiv.innerHTML += `<div>Fy = ${lrInputs.Fy} (ksi)</div><div>Enter c (default 1):</div>`;
+            outputDiv.innerHTML = `<div>Fy = ${lrInputs.Fy} (ksi)</div><div>Enter c (default 1):</div>`;
             return;
           }
           if (lrPromptState === 'c') {
             lrInputs.c = parseFloat(command);
             if (isNaN(lrInputs.c) || lrInputs.c <= 0) lrInputs.c = 1;
-            outputDiv.innerHTML += `<div>c = ${lrInputs.c}</div>`;
             // Now calculate Lr
             const result = wShapeData[lastMember];
             let rts = parseFloat(result['rts'] || result['Rts']);
@@ -350,7 +347,7 @@
             let ho = parseFloat(result['ho'] || result['Ho'] || result['h0']);
             let J = parseFloat(result['J'] || result['j']);
             if (!rts || !Sx || !ho || !J) {
-              outputDiv.innerHTML += `<div style='color:red;'>Missing rts, Sx, ho, or J for this member.</div>`;
+              outputDiv.innerHTML = `<div style='color:red;'>Missing rts, Sx, ho, or J for this member.</div>`;
               lrPromptState = null;
               return;
             }
@@ -361,14 +358,16 @@
             const D = Math.sqrt(1 + 6.76 * Math.pow(C, 2));
             const lr = A * B * Math.sqrt(1 + D);
             const lrFeet = lr / 12;
-            outputDiv.innerHTML += `<div style='color:#00ff9f;'>Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²)) = ${lr.toFixed(3)} in (${lrFeet.toFixed(3)} ft)</div>`;
+            outputDiv.innerHTML = `<div style='color:#00ff9f;'>Lr = 1.95 × rts × (E / 0.7Fy) × sqrt(J × c / (Sx ho)) × sqrt(1 + sqrt(1 + 6.76 × (0.7Fy Sx ho / (E J c))²))<br>
+            = 1.95 × ${rts} × (${E} / 0.7×${Fy}) × sqrt(${J} × ${c} / (${Sx} × ${ho})) × sqrt(1 + sqrt(1 + 6.76 × (0.7×${Fy}×${Sx}×${ho} / (${E}×${J}×${c}))²))<br>
+            = <b>${lr.toFixed(3)} in</b> (<b>${lrFeet.toFixed(3)} ft</b>)</div>`;
             lrPromptState = null;
             return;
           }
         }
 
         // Handle other commands
-        const commandResult = wShapeData[command];
+        const commandResult = wShapeData[command.toUpperCase()];
         if (commandResult) {
           // Try to get ry (case-insensitive)
           const ryKey = Object.keys(commandResult).find(k => k.trim().toLowerCase() === 'ry');
@@ -403,8 +402,9 @@
             <button class="copy-button" onclick="copyTableToClipboard(this)">Copy to Excel</button>
           ` + tableHTML;
         } else {
-          outputDiv.innerHTML += `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+          outputDiv.innerHTML = `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
         }
+        suggestionsDiv.style.display = 'none';
       } else if (e.key === 'Escape') {
         suggestionsDiv.style.display = 'none';
       }
