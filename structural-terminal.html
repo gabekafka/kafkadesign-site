@@ -202,6 +202,79 @@
           printLine(`Shape “${rawValue}” not found.`, "error");
         }
       });
+
+    // ------------------------------------------------------------------------
+    // 7) Show suggestions as user types (optional enhancement)
+    // ------------------------------------------------------------------------
+    const suggestionsDiv = document.createElement("div");
+    suggestionsDiv.style.position = "absolute";
+    suggestionsDiv.style.backgroundColor = "#252526";
+    suggestionsDiv.style.color = "#c5c5c5";
+    suggestionsDiv.style.border = "1px solid #333";
+    suggestionsDiv.style.maxHeight = "150px";
+    suggestionsDiv.style.overflowY = "auto";
+    suggestionsDiv.style.width = "200px";
+    suggestionsDiv.style.display = "none";
+    suggestionsDiv.style.zIndex = "1000";
+    document.body.appendChild(suggestionsDiv);
+
+    const inputElem = document.getElementById("terminalInput");
+    inputElem.style.position = "relative";
+
+    inputElem.addEventListener("input", () => {
+      const rect = inputElem.getBoundingClientRect();
+      suggestionsDiv.style.top = rect.bottom + window.scrollY + "px";
+      suggestionsDiv.style.left = rect.left + window.scrollX + "px";
+      showSuggestions(inputElem.value);
+    });
+
+    function showSuggestions(inputValue) {
+        if ((!wShapeLoaded && !mcShapeLoaded) || !inputValue) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        // Combine keys from both data sets
+        const allKeys = Object.keys(wShapeData).concat(Object.keys(mcShapeData));
+        const matches = allKeys.filter(key =>
+          key.startsWith(inputValue.toUpperCase())
+        );
+        // Sort: For W-shapes, extract weight (second number) and sort ascending by weight.
+        // For non-W keys, fallback to sorting by the first numeric sequence.
+        matches.sort((a, b) => {
+          const wA = a.match(/^W(\d+)X(\d+)/i);
+          const wB = b.match(/^W(\d+)X(\d+)/i);
+          if (wA && wB) {
+            const weightA = parseInt(wA[2], 10);
+            const weightB = parseInt(wB[2], 10);
+            return weightA - weightB;
+          }
+          // If only one is a W-shape, prefer that first
+          if (wA && !wB) return -1;
+          if (!wA && wB) return 1;
+          // Otherwise, fallback to first numeric sequence
+          const numA = parseInt(a.match(/\d+/)[0], 10);
+          const numB = parseInt(b.match(/\d+/)[0], 10);
+          return numA - numB;
+        });
+
+        if (matches.length) {
+          suggestionsDiv.innerHTML = matches
+            .map(key => `<div style="padding:4px; cursor:pointer;">${key}</div>`)
+            .join("");
+          suggestionsDiv.style.display = "block";
+
+          // Add click handlers to suggestions
+          Array.from(suggestionsDiv.children).forEach((child, idx) => {
+            child.addEventListener("click", () => {
+              inputElem.value = matches[idx];
+              suggestionsDiv.style.display = "none";
+              inputElem.focus();
+            });
+          });
+        } else {
+          suggestionsDiv.style.display = "none";
+        }
+    }
   </script>
 </body>
 </html>
