@@ -173,15 +173,6 @@
     <div class="vertical-divider"></div>
     <div class="right-side-content">
       <div class="ltb-category" style="color:#00ff9f; font-weight:bold; font-size:1.2rem; margin-bottom:0.5rem; letter-spacing:0.05em;">L.T.B.</div>
-      <div class="lp-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px; margin-bottom:2rem;">
-        <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lp Calculator</h2>
-        <label for="Einput" style="display:block; margin-bottom:0.5rem;">E (ksi):</label>
-        <input id="Einput" type="number" step="any" placeholder="29000" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
-        <label for="Fyinput" style="display:block; margin-bottom:0.5rem;">Fy (ksi):</label>
-        <input id="Fyinput" type="number" step="any" placeholder="50" style="width:100%; margin-bottom:1rem; background:#222; color:#00ff9f; border:1px solid #00ff9f; border-radius:3px; padding:0.3rem; font-family:monospace;">
-        <button id="calcLpBtn" style="width:100%; background:#00ff9f; color:#181818; border:none; border-radius:3px; padding:0.5rem; font-family:monospace; font-weight:bold; cursor:pointer;">Calculate Lp</button>
-        <div id="lpResult" style="margin-top:1rem; color:#fff; font-size:1.1rem;"></div>
-      </div>
       <div class="lr-calculator" style="background:#181818; border:1px solid #00ff9f; border-radius:6px; padding:1.5rem; color:#00ff9f; min-width:260px;">
         <h2 style="margin-top:0; color:#00ff9f; font-size:1.1rem;">Lr Calculator</h2>
         <label for="cinput" style="display:block; margin-bottom:0.5rem;">c (default 1):</label>
@@ -211,6 +202,8 @@
     let lastMember = null; // Store the most recent member key
     let lrPromptState = null; // Track Lr prompt state
     let lrInputs = {};
+    let lpPromptState = null; // Track Lp prompt state
+    let lpInputs = {};
     let lastE = 29000; // Default E value
 
     // Load and parse CSV using PapaParse
@@ -366,6 +359,58 @@
           }
         }
 
+        // Check for Lp command pattern: <member> Lp
+        const lpMatch = command.match(/^(w\d+x\d+)\s+lp$/i);
+        if (lpMatch) {
+          const memberKey = lpMatch[1].toUpperCase();
+          if (!wShapeData[memberKey]) {
+            outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
+            return;
+          }
+          lastMember = memberKey;
+          lpPromptState = 'E';
+          lpInputs = {};
+          outputDiv.innerHTML = `<div>Enter E (ksi) [default: 29000]:</div>`;
+          return;
+        }
+
+        // Handle Lp prompt flow
+        if (lpPromptState) {
+          if (lpPromptState === 'E') {
+            lpInputs.E = parseFloat(command) || 29000;
+            if (isNaN(lpInputs.E) || lpInputs.E <= 0) {
+              outputDiv.innerHTML = `<div style='color:red;'>Please enter a valid E (ksi):</div>`;
+              return;
+            }
+            lpPromptState = 'Fy';
+            outputDiv.innerHTML = `<div>Enter Fy (ksi):</div>`;
+            return;
+          }
+          if (lpPromptState === 'Fy') {
+            lpInputs.Fy = parseFloat(command);
+            if (isNaN(lpInputs.Fy) || lpInputs.Fy <= 0) {
+              outputDiv.innerHTML = `<div>Enter Fy (ksi):</div><div style='color:red;'>Please enter a valid Fy (ksi):</div>`;
+              return;
+            }
+            // Now calculate Lp
+            const result = wShapeData[lastMember];
+            let ry = parseFloat(result['ry'] || result['RY']);
+            if (!ry) {
+              outputDiv.innerHTML = `<div style='color:red;'>Missing ry for this member.</div>`;
+              lpPromptState = null;
+              return;
+            }
+            const E = lpInputs.E, Fy = lpInputs.Fy;
+            const lp = 1.76 * ry * Math.sqrt(E / Fy);
+            const lpFeet = lp / 12;
+            outputDiv.innerHTML = `<div style='color:#00ff9f;'>Lp = 1.76 × ry × sqrt(E / Fy)<br>
+            = 1.76 × ${ry} × sqrt(${E} / ${Fy})<br>
+            = <b>${lp.toFixed(3)} in</b> (<b>${lpFeet.toFixed(3)} ft</b>)</div>`;
+            lpPromptState = null;
+            return;
+          }
+        }
+
         // Handle other commands
         const commandResult = wShapeData[command.toUpperCase()];
         if (commandResult) {
@@ -466,28 +511,6 @@
         button.style.backgroundColor = '#00ff9f';
       }, 1000);
     }
-
-    // Lp Calculator logic
-    document.getElementById('calcLpBtn').onclick = function() {
-      const E = parseFloat(document.getElementById('Einput').value);
-      const Fy = parseFloat(document.getElementById('Fyinput').value);
-      const lpResultDiv = document.getElementById('lpResult');
-      if (isNaN(E) || isNaN(Fy) || E <= 0 || Fy <= 0) {
-        lpResultDiv.textContent = 'Please enter valid values for E and Fy.';
-        lpResultDiv.style.color = 'red';
-        return;
-      }
-      if (lastRy === null || isNaN(lastRy)) {
-        lpResultDiv.textContent = 'Please search for a W-shape first (ry not found).';
-        lpResultDiv.style.color = 'red';
-        return;
-      }
-      // Lp = 1.76 * ry * sqrt(E/Fy)
-      const lp = 1.76 * lastRy * Math.sqrt(E / Fy);
-      const lpFeet = lp / 12;
-      lpResultDiv.textContent = `Lp = 1.76 × ry × sqrt(E / Fy) = 1.76 × ${lastRy} × sqrt(${E} / ${Fy}) = ${lp.toFixed(3)} in (${lpFeet.toFixed(3)} ft)`;
-      lpResultDiv.style.color = '#00ff9f';
-    };
 
     // Lr Calculator logic
     document.getElementById('calcLrBtn').onclick = function() {
