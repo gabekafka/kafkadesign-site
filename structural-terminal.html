@@ -91,6 +91,12 @@
     let wShapeLoaded = false;
     let mcShapeLoaded = false;
 
+    // Variables for Lr calculation state
+    let lrState = null;       // null | "awaitingFy" | "awaitingC"
+    let lrShapeObj = null;
+    const lrE = 29000;        // default E (ksi)
+    let lrFy = null;
+
     // ------------------------------------------------------------------------
     // 2) Utility: print a new line of text into #terminalOutput
     //    - argument `text` can be a string (plain text) or
@@ -180,6 +186,62 @@
 
           // Print the prompt line with the user’s request
           printLine(`> ${rawValue}`, "prompt-line");
+
+          // ----- Lr state machine -----
+          // If we’re waiting for Fy, parse it now:
+          if (lrState === "awaitingFy") {
+            const fyVal = parseFloat(rawValue);
+            if (isNaN(fyVal) || fyVal <= 0) {
+              printLine("❌ Please enter a valid numeric Fy.", "error");
+              return;
+            }
+            lrFy = fyVal;
+            lrState = "awaitingC";
+            printLine("Enter c (conservative):");
+            return;
+          }
+
+          // If we’re waiting for c, parse it and compute Lr:
+          if (lrState === "awaitingC") {
+            const cVal = parseFloat(rawValue);
+            if (isNaN(cVal) || cVal <= 0) {
+              printLine("❌ Please enter a valid numeric c.", "error");
+              return;
+            }
+            // Compute Lr using formula:
+            const shapeObj = lrShapeObj;
+            const d = parseFloat(shapeObj["d"]);
+            const tf = parseFloat(shapeObj["tf"]);
+            const ho = d - tf;
+            const Sx = parseFloat(shapeObj["Sx"]);
+            const J = parseFloat(shapeObj["J"]);
+            const Jc = J * cVal;
+            const r_ts = Math.sqrt(Jc / (Sx * ho));
+            const term = (0.7 * lrFy / lrE) * (Sx * ho) / Jc;
+            const inside = 1 + Math.sqrt(1 + 6.76 * Math.pow(term, 2));
+            const Lr = 1.95 * r_ts * Math.sqrt(lrE / (0.7 * lrFy)) * Math.sqrt(inside);
+            printLine(`Lr = ${Lr.toFixed(2)} in (for Fy=${lrFy}, c=${cVal})`);
+            lrState = null;
+            lrShapeObj = null;
+            return;
+          }
+          // ----- End Lr state machine -----
+
+          // Detect “<W##X##> LR” command to start Lr flow:
+          const lrMatch = rawValue.match(/^(W\d+X\d+)\s+LR$/i);
+          if (lrMatch && wShapeData) {
+            const wk = lrMatch[1];
+            if (!wShapeData[wk]) {
+              printLine(`❌ Shape not found: ${wk}`, "error");
+              return;
+            }
+            // Initialize Lr sequence
+            lrShapeObj = wShapeData[wk];
+            lrState = "awaitingFy";
+            printLine(`E (ksi) default = ${lrE}`);
+            printLine("Enter Fy (ksi):");
+            return;
+          }
 
           // First, check W shapes:
           if (wShapeData && wShapeData[rawValue]) {
