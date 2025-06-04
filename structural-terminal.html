@@ -72,6 +72,16 @@
     autocomplete="off"
   />
 
+  <!-- Instruction for Lr and Lp capabilities -->
+  <div id="instructionText" style="padding: 4px 12px; color: #aaaaaa; font-size: 0.9rem;">
+    For any W-shape you can now quickly get both buckling lengths (Lr) and the inelastic limit (Lp). 
+    Simply type one of the following at the prompt (then follow the on-screen questions):
+    <ul style="margin:4px 0 4px 16px; padding:0; list-style-type: disc;">
+      <li><code>W12X35 LR</code> → Calculate Lr: prompts for Fy (ksi) and c, then returns Lr in feet.</li>
+      <li><code>W12X35 LP</code> → Calculate Lp: prompts for Fy (ksi), then returns Lp in feet.</li>
+    </ul>
+  </div>
+
   <!-- Interactive prompt area (for Fy and c) -->
   <div id="interactivePrompt" style="padding: 4px 12px; color: #00ff00;"></div>
 
