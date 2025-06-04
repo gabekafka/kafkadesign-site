@@ -179,6 +179,7 @@
     const outputDiv = document.getElementById('terminalOutput');
     const suggestionsDiv = document.getElementById('suggestions');
     let wShapeData = {};
+    let mcShapeData = {};
     let lastRy = null; // Store the most recent ry value
     let lastMember = null; // Store the most recent member key
     let lrPromptState = null; // Track Lr prompt state
@@ -205,6 +206,25 @@
         );
 
         console.log("Loaded W-shapes:", Object.keys(wShapeData));
+      }
+    });
+
+    // Load and parse MC CSV
+    Papa.parse('assets/data/mc-member-data.csv', {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const rows = results.data;
+        const nameKey = Object.keys(rows[0]).find(k => k.trim().toUpperCase() === "NAME");
+
+        mcShapeData = Object.fromEntries(
+          rows.map(row => [
+            row[nameKey]?.trim().toUpperCase(),
+            row
+          ])
+        );
+
+        console.log("Loaded MC-shapes:", Object.keys(mcShapeData));
       }
     });
 
@@ -425,9 +445,27 @@
           }
         }
 
-        // Handle other commands
-        const commandResult = wShapeData[command.toUpperCase()];
-        if (commandResult) {
+        // Helper: get shape data and type
+        function getShapeDataAndType(command) {
+          const wMatch = command.match(/^(w\d+x\d+)/i);
+          if (wMatch) {
+            const key = wMatch[1].toUpperCase();
+            if (wShapeData[key]) return { data: wShapeData[key], type: 'W', key };
+          }
+          const mcMatch = command.match(/^(mc\d+x\d+)/i);
+          if (mcMatch) {
+            const key = mcMatch[1].toUpperCase();
+            if (mcShapeData[key]) return { data: mcShapeData[key], type: 'MC', key };
+          }
+          return null;
+        }
+
+        // Update all shape lookups to use getShapeDataAndType
+        // Example for property lookup:
+        const shapeResult = getShapeDataAndType(command);
+        if (shapeResult) {
+          const { data: commandResult, type: shapeType, key: shapeKey } = shapeResult;
+          lastMember = shapeKey;
           // Try to get ry (case-insensitive)
           const ryKey = Object.keys(commandResult).find(k => k.trim().toLowerCase() === 'ry');
           if (ryKey) {
@@ -435,7 +473,7 @@
           } else {
             lastRy = null;
           }
-          // Lambda_b calculation
+          // Lambda_b calculation (W and MC may differ in the future)
           const bf = parseFloat(commandResult['bf'] || commandResult['BF']);
           const tf = parseFloat(commandResult['tf'] || commandResult['TF']);
           let lambdaBText = '';
@@ -461,7 +499,7 @@
             <button class="copy-button" onclick="copyTableToClipboard(this)">Copy to Excel</button>
           ` + tableHTML;
         } else {
-          outputDiv.innerHTML = `<div style="color: red;">❌ W-shape not found: ${command}</div>`;
+          outputDiv.innerHTML = `<div style="color: red;">❌ Shape not found: ${command}</div>`;
         }
         suggestionsDiv.style.display = 'none';
       } else if (e.key === 'Escape') {
