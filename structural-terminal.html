@@ -310,7 +310,7 @@
           lastMember = memberKey;
           lrPromptState = 'E';
           lrInputs = {};
-          outputDiv.innerHTML = `<div>&gt; ${command}</div><div>Enter E (ksi) [default: 29000]:</div>`;
+          outputDiv.innerHTML = `<div>Enter E (ksi) [default: 29000]:</div>`;
           return;
         }
 
@@ -334,7 +334,7 @@
               return;
             }
             lrPromptState = 'c';
-            outputDiv.innerHTML = `<div>Fy = ${lrInputs.Fy} (ksi)</div><div>Enter c (default 1):</div>`;
+            outputDiv.innerHTML = `<div>Enter c (default 1):</div>`;
             return;
           }
           if (lrPromptState === 'c') {
