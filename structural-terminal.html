@@ -295,9 +295,9 @@
         const command = input.value.trim();
         input.value = '';
 
-        // Check for Lr command pattern: <W-member> Lr
+        // Check for Lr command pattern: <W-member> Lr (exact match)
         const lrMatch = command.match(/^(w\d+x\d+)\s+lr$/i);
-        if (lrMatch) {
+        if (lrMatch && command.replace(/\s+/g, '').toLowerCase() === (lrMatch[1] + 'lr').toLowerCase()) {
           const memberKey = lrMatch[1].toUpperCase();
           if (!wShapeData[memberKey]) {
             outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
@@ -362,9 +362,9 @@
           }
         }
 
-        // Check for Lp command pattern: <W-member> Lp
+        // Check for Lp command pattern: <W-member> Lp (exact match)
         const lpMatch = command.match(/^(w\d+x\d+)\s+lp$/i);
-        if (lpMatch) {
+        if (lpMatch && command.replace(/\s+/g, '').toLowerCase() === (lpMatch[1] + 'lp').toLowerCase()) {
           const memberKey = lpMatch[1].toUpperCase();
           if (!wShapeData[memberKey]) {
             outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
@@ -414,9 +414,9 @@
           }
         }
 
-        // Lambda terminal command: <W-member> lambda pf
+        // Lambda terminal command: <W-member> lambda pf (exact match)
         const lambdaMatch = command.match(/^(w\d+x\d+)\s+lambda\s+(pf)$/i);
-        if (lambdaMatch) {
+        if (lambdaMatch && command.replace(/\s+/g, '').toLowerCase() === (lambdaMatch[1] + 'lambdapf').toLowerCase()) {
           const memberKey = lambdaMatch[1].toUpperCase();
           if (!wShapeData[memberKey]) {
             outputDiv.innerHTML = `<div>&gt; ${command}</div><div style=\"color: red;\">❌ W-shape not found: ${memberKey}</div>`;
