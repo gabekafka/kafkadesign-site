@@ -295,7 +295,7 @@
         const command = input.value.trim();
         input.value = '';
 
-        // Check for Lr command pattern: <member> Lr
+        // Check for Lr command pattern: <W-member> Lr
         const lrMatch = command.match(/^(w\d+x\d+)\s+lr$/i);
         if (lrMatch) {
           const memberKey = lrMatch[1].toUpperCase();
@@ -310,7 +310,7 @@
           return;
         }
 
-        // Handle Lr prompt flow
+        // Handle Lr prompt flow (W only)
         if (lrPromptState) {
           if (lrPromptState === 'E') {
             lrInputs.E = parseFloat(command) || 29000;
@@ -362,7 +362,7 @@
           }
         }
 
-        // Check for Lp command pattern: <member> Lp
+        // Check for Lp command pattern: <W-member> Lp
         const lpMatch = command.match(/^(w\d+x\d+)\s+lp$/i);
         if (lpMatch) {
           const memberKey = lpMatch[1].toUpperCase();
@@ -377,7 +377,7 @@
           return;
         }
 
-        // Handle Lp prompt flow
+        // Handle Lp prompt flow (W only)
         if (lpPromptState) {
           if (lpPromptState === 'E') {
             lpInputs.E = parseFloat(command) || 29000;
@@ -414,7 +414,7 @@
           }
         }
 
-        // Lambda terminal command: <member> lambda pf
+        // Lambda terminal command: <W-member> lambda pf
         const lambdaMatch = command.match(/^(w\d+x\d+)\s+lambda\s+(pf)$/i);
         if (lambdaMatch) {
           const memberKey = lambdaMatch[1].toUpperCase();
@@ -429,7 +429,7 @@
           return;
         }
 
-        // Lambda prompt flow
+        // Lambda prompt flow (W only)
         if (lambdaPromptState) {
           if (lambdaPromptState === 'pf') {
             lambdaInputs.Fy = parseFloat(command);
@@ -460,8 +460,7 @@
           return null;
         }
 
-        // Update all shape lookups to use getShapeDataAndType
-        // Example for property lookup:
+        // Section property table lookup for both W and MC
         const shapeResult = getShapeDataAndType(command);
         if (shapeResult) {
           const { data: commandResult, type: shapeType, key: shapeKey } = shapeResult;
