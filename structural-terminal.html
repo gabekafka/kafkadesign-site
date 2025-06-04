@@ -461,7 +461,7 @@
         }
 
         // Section property table lookup for both W and MC
-        const shapeResult = getShapeDataAndType(command);
+        const shapeResult = getShapeDataAndType(command.trim().toLowerCase());
         if (shapeResult) {
           const { data: commandResult, type: shapeType, key: shapeKey } = shapeResult;
           lastMember = shapeKey;
