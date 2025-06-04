@@ -217,7 +217,8 @@
             const term = (0.7 * lrFy / lrE) * ((Sx * ho) / (J * cVal));
             const inside = 1 + Math.sqrt(1 + 6.76 * Math.pow(term, 2));
             const Lr = 1.95 * r_ts * Math.sqrt(lrE / (0.7 * lrFy)) * Math.sqrt(inside);
-            printLine(`Lr = ${Lr.toFixed(2)} in (for Fy=${lrFy}, c=${cVal})`);
+            const Lr_ft = Lr / 12;
+            printLine(`Lr = ${Lr_ft.toFixed(2)} ft (for Fy=${lrFy}, c=${cVal})`);
             // Clear prompt after computing Lr
             document.getElementById("interactivePrompt").innerText = "";
             lrState = null;
