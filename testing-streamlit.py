@@ -1,7 +1,8 @@
 import streamlit as st
-import pandas as pd
 
-df = pd.read_csv("data.csv")
-st.title("My Dashboard")
-st.sidebar.selectbox("Choose column", df.columns)
-st.line_chart(df)
+st.title("My First Streamlit App")
+st.write("Hello, world!")
+
+# A simple slider widget
+value = st.slider("Pick a number", 0, 100, 50)
+st.write("You picked:", value)
