@@ -1,9 +1,22 @@
-import yfinance as yf
+import streamlit as st
+import requests
+from bs4 import BeautifulSoup
 
-# 1) Create a Ticker object
-ticker = yf.Ticker("AAPL")
+st.title("Apartment Listing Checker")
 
-# 2) Get historical market data
-hist = ticker.history(period="1mo", interval="1d")  # 1 month of daily data
+URL = st.text_input("Paste apartment URL:", "https://example.com/apartments")
 
-print(hist.head())
+if st.button("Check for Listings"):
+    try:
+        response = requests.get(URL)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        listings = [item.text.strip() for item in soup.find_all("h2")]
+        if listings:
+            st.success(f"Found {len(listings)} listing(s):")
+            for listing in listings:
+                st.write("-", listing)
+        else:
+            st.warning("No listings found.")
+    except Exception as e:
+        st.error(f"Error fetching listings: {e}")
