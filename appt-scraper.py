@@ -21,9 +21,10 @@ if st.button("Check for Listings"):
         time.sleep(5)  # wait for JavaScript to load
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
+        st.code(soup.prettify()[:3000])
         driver.quit()
 
-        listings = [a.text.strip() for a in soup.find_all("a") if a.text.strip().startswith("#")]
+        listings = [tag.text.strip() for tag in soup.find_all("a") if "/building/" in tag.get("href", "")]
         if listings:
             st.success(f"Found {len(listings)} listing(s):")
             for listing in listings:
