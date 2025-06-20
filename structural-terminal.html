@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Structural Terminal</title>
   <style>
-    /* Basic “dark terminal” styling – adjust to taste */
+    /* Basic "dark terminal" styling – adjust to taste */
     body {
       margin: 0;
       padding: 0;
@@ -45,7 +45,7 @@
 
     .prompt-line > span.prompt-symbol {
       margin-right: 6px;
-      color: #00ff00; /* green “>” */
+      color: #00ff00; /* green ">" */
     }
 
     .output-line {
@@ -74,7 +74,7 @@
 
   <!-- Instruction for commands -->
   <div id="instructionText" style="position: absolute; top: 8px; right: 12px; padding: 4px 12px; color: #aaaaaa; font-size: 0.9rem;">
-    <div><code>&lt;member&gt; &lt;command&gt;</code> &nbsp;&nbsp; Ex: <code>W12X16 LR</code></div>
+    <div><code>&lt;member&gt; &lt;command&gt;</code> &nbsp;&nbsp; Ex: <code>W12X16 LR</code> or <code>spf 2x12</code></div>
     <table style="margin-top:4px; border-collapse: collapse; width: 100%; color: #aaaaaa; font-size: 0.9rem;">
       <tr>
         <th style="text-align: left; padding: 2px 6px;">Command</th>
@@ -82,11 +82,15 @@
       </tr>
       <tr>
         <td style="padding: 2px 6px;"><code>LR</code></td>
-        <td style="padding: 2px 6px;">Residual length limit (Lr)</td>
+        <td style="padding: 2px 6px;">Residual length limit (Lr) - Steel only</td>
       </tr>
       <tr>
         <td style="padding: 2px 6px;"><code>LP</code></td>
-        <td style="padding: 2px 6px;">Plastic length limit (Lp)</td>
+        <td style="padding: 2px 6px;">Plastic length limit (Lp) - Steel only</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>spf 2x12</code></td>
+        <td style="padding: 2px 6px;">SPF wood V, M values</td>
       </tr>
     </table>
   </div>
@@ -96,7 +100,7 @@
 
   <!-- Output area -->
   <div id="terminalOutput">
-    <!-- Initial “loading” message: -->
+    <!-- Initial "loading" message: -->
     <div class="prompt-line loading">
       <span class="prompt-symbol">&gt;</span>
       <span>Loading data…</span>
@@ -106,12 +110,14 @@
   <!-- All JavaScript lives here -->
   <script>
     // ------------------------------------------------------------------------
-    // 1) Variables to hold loaded JSON data and “loaded” flags:
+    // 1) Variables to hold loaded JSON data and "loaded" flags:
     // ------------------------------------------------------------------------
     let wShapeData = null;
     let mcShapeData = null;
+    let spfWoodData = null;
     let wShapeLoaded = false;
     let mcShapeLoaded = false;
+    let spfWoodLoaded = false;
 
     // Variables for Lr calculation state
     let lrState = null;       // null | "awaitingFy" | "awaitingC"
@@ -127,7 +133,7 @@
     // ------------------------------------------------------------------------
     // 2) Utility: print a new line of text into #terminalOutput
     //    - argument `text` can be a string (plain text) or
-    //      an HTML‐formatted string if you want color, etc.
+    //      an HTML-formatted string if you want color, etc.
     // ------------------------------------------------------------------------
     function printLine(text, cssClass = "output-line") {
       const outDiv = document.getElementById("terminalOutput");
@@ -144,13 +150,13 @@
     // 3) After BOTH JSONs have loaded, enable the input:
     // ------------------------------------------------------------------------
     function tryEnableInput() {
-      if (wShapeLoaded && mcShapeLoaded) {
+      if (wShapeLoaded && mcShapeLoaded && spfWoodLoaded) {
         const input = document.getElementById("terminalInput");
         input.disabled = false;
-        input.placeholder = "Search a shape (e.g. W12X16)…";
+        input.placeholder = "Search a shape (e.g. W12X16, spf 2x12)…";
         input.focus();
 
-        // Remove the initial “Loading data…” line:
+        // Remove the initial "Loading data..." line:
         document.getElementById("terminalOutput").innerHTML = "";
         // Print a welcome message now that data is available:
         printLine("> Data loaded. Type a shape name and press Enter.");
@@ -158,7 +164,7 @@
     }
 
     // ------------------------------------------------------------------------
-    // 4) Fetch W‐section JSON
+    // 4) Fetch W-section JSON
     // ------------------------------------------------------------------------
     fetch("js/w-member-data.json")
       .then((resp) => {
@@ -174,11 +180,11 @@
         console.error("❌ Error loading W JSON:", err);
         // Show an error on screen:
         document.getElementById("terminalOutput").innerHTML = "";
-        printLine("Error: Could not load W‐member JSON.", "error");
+        printLine("Error: Could not load W-member JSON.", "error");
       });
 
     // ------------------------------------------------------------------------
-    // 5) Fetch MC‐section JSON
+    // 5) Fetch MC-section JSON
     // ------------------------------------------------------------------------
     fetch("js/mc-member-data.json")
       .then((resp) => {
@@ -193,11 +199,44 @@
       .catch((err) => {
         console.error("❌ Error loading MC JSON:", err);
         document.getElementById("terminalOutput").innerHTML = "";
-        printLine("Error: Could not load MC‐member JSON.", "error");
+        printLine("Error: Could not load MC-member JSON.", "error");
       });
 
     // ------------------------------------------------------------------------
-    // 6) Handle “Enter” key presses in the input
+    // 6) Fetch SPF wood data from CSV
+    // ------------------------------------------------------------------------
+    fetch("assets/data/spf1and2-design-values.csv")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`SPF CSV HTTP ${resp.status}`);
+        return resp.text();
+      })
+      .then((csvText) => {
+        // Parse CSV data
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        spfWoodData = {};
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const shape = values[0];
+          spfWoodData[shape] = {
+            "Shape": shape,
+            "V": values[1],
+            "M": values[2]
+          };
+        }
+        
+        spfWoodLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading SPF CSV:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load SPF wood data.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 7) Handle "Enter" key presses in the input
     // ------------------------------------------------------------------------
     document
       .getElementById("terminalInput")
@@ -207,7 +246,7 @@
           this.value = ""; // clear input
           if (!rawValue) return;
 
-          // Print the prompt line with the user’s request
+          // Print the prompt line with the user's request
           printLine(`> ${rawValue}`, "prompt-line");
 
           // ----- Lp state machine -----
@@ -233,7 +272,7 @@
           // ----- End Lp state machine -----
 
           // ----- Lr state machine -----
-          // If we’re waiting for Fy, parse it now:
+          // If we're waiting for Fy, parse it now:
           if (lrState === "awaitingFy") {
             const fyVal = parseFloat(rawValue);
             if (isNaN(fyVal) || fyVal <= 0) {
@@ -246,7 +285,7 @@
             return;
           }
 
-          // If we’re waiting for c, parse it and compute Lr:
+          // If we're waiting for c, parse it and compute Lr:
           if (lrState === "awaitingC") {
             const cVal = parseFloat(rawValue);
             if (isNaN(cVal) || cVal <= 0) {
@@ -273,7 +312,22 @@
           }
           // ----- End Lr state machine -----
 
-          // Detect “<W##X##> LR” command to start Lr flow:
+          // Detect SPF wood commands like "spf 2x12"
+          const spfMatch = rawValue.match(/^spf\s+(\d+x\d+)$/i);
+          if (spfMatch && spfWoodData) {
+            const shapeKey = spfMatch[1].toLowerCase();
+            if (!spfWoodData[shapeKey]) {
+              printLine(`❌ SPF shape not found: ${shapeKey}`, "error");
+              return;
+            }
+            const woodObj = spfWoodData[shapeKey];
+            printLine(`SPF ${woodObj.Shape}:`);
+            printLine(`V\t${woodObj.V} lbs`);
+            printLine(`M\t${woodObj.M} ft-lbs`);
+            return;
+          }
+
+          // Detect "<W##X##> LR" command to start Lr flow:
           const lrMatch = rawValue.match(/^(W\d+X\d+)\s+LR$/i);
           if (lrMatch && wShapeData) {
             const wk = lrMatch[1];
@@ -290,7 +344,7 @@
             return;
           }
 
-          // Detect “<W##X##> LP” command to start Lp flow:
+          // Detect "<W##X##> LP" command to start Lp flow:
           const lpMatch = rawValue.match(/^(W\d+X\d+)\s+LP$/i);
           if (lpMatch && wShapeData) {
             const wk = lpMatch[1];
@@ -339,13 +393,13 @@
 
           // If not found:
           document.getElementById("interactivePrompt").innerText = "";
-          printLine(`Shape “${rawValue}” not found.`, "error");
+          printLine(`Shape "${rawValue}" not found.`, "error");
         }
       });
 
     // ------------------------------------------------------------------------
     // Copy-to-clipboard for last printed shape
-    // Creates tab-separated lines “key<TAB>value” for Excel.
+    // Creates tab-separated lines "key<TAB>value" for Excel.
     // ------------------------------------------------------------------------
     function copyLastShapeToClipboard(shapeObj) {
       const lines = Object.entries(shapeObj).map(
