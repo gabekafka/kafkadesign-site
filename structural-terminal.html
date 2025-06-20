@@ -271,7 +271,7 @@
         return resp.text();
       })
       .then((csvText) => {
-        const lines = csvText.trim().split('\\n');
+        const lines = csvText.trim().split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
         lvlWoodData = []; // Use an array for LVL since names are not unique keys
         
