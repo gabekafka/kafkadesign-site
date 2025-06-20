@@ -359,6 +359,24 @@
             return;
           }
 
+          // Handle "spf" command to show the whole table
+          if (rawValue.toUpperCase() === 'SPF' && spfWoodData) {
+            const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
+            printLine(headers.join('\\t'));
+
+            Object.values(spfWoodData).forEach(woodObj => {
+              const row = headers.map(h => woodObj[h] || 'N/A').join('\\t');
+              printLine(row);
+            });
+
+            const btn = document.createElement("button");
+            btn.textContent = "Copy SPF Table to Excel";
+            btn.onclick = () => copySpfTableToClipboard();
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
+            return;
+          }
+
           // Detect "<W##X##> LR" command to start Lr flow:
           const lrMatch = rawValue.match(/^(W\d+X\d+)\s+LR$/i);
           if (lrMatch && wShapeData) {
@@ -445,6 +463,23 @@
       document.execCommand("copy");
       document.body.removeChild(textarea);
       printLine("(Copied to clipboard)", "loading");
+    }
+
+    function copySpfTableToClipboard() {
+      if (!spfWoodData) return;
+      const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
+      const headerLine = headers.join('\\t');
+      const lines = Object.values(spfWoodData).map(shapeObj => {
+        return headers.map(header => shapeObj[header] || '').join('\\t');
+      });
+      const text = [headerLine, ...lines].join('\\n');
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      printLine("(Copied SPF table to clipboard)", "loading");
     }
 
     // ------------------------------------------------------------------------
