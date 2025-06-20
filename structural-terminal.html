@@ -222,7 +222,8 @@
           spfWoodData[shape] = {
             "Shape": shape,
             "V": values[1],
-            "M": values[2]
+            "M": values[2],
+            "EI": values[3] || "N/A" // Handle EI column if it exists
           };
         }
         
@@ -324,6 +325,16 @@
             printLine(`SPF ${woodObj.Shape}:`);
             printLine(`V\t${woodObj.V} lbs`);
             printLine(`M\t${woodObj.M} ft-lbs`);
+            if (woodObj.EI && woodObj.EI !== "N/A") {
+              printLine(`EI\t${woodObj.EI} (10^6)`);
+            }
+            
+            // Add Copy to Excel button for SPF wood
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(woodObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
             return;
           }
 
