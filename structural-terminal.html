@@ -361,19 +361,47 @@
 
           // Handle "spf" command to show the whole table
           if (rawValue.toUpperCase() === 'SPF' && spfWoodData) {
-            const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
-            printLine(headers.join('\\t'));
+            const outDiv = document.getElementById("terminalOutput");
+            
+            // Create table element
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '300px';
 
-            Object.values(spfWoodData).forEach(woodObj => {
-              const row = headers.map(h => woodObj[h] || 'N/A').join('\\t');
-              printLine(row);
+            // Create table header
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
+            headers.forEach(headerText => {
+              const th = document.createElement('th');
+              th.textContent = headerText;
+              th.style.textAlign = 'left';
+              th.style.padding = '4px 8px';
+              th.style.borderBottom = '1px solid #555';
+              headerRow.appendChild(th);
             });
+
+            // Create table body
+            const tbody = table.createTBody();
+            Object.values(spfWoodData).forEach(woodObj => {
+              const row = tbody.insertRow();
+              headers.forEach(header => {
+                const cell = row.insertCell();
+                cell.textContent = woodObj[header] || 'N/A';
+                cell.style.padding = '4px 8px';
+              });
+            });
+
+            outDiv.appendChild(table);
 
             const btn = document.createElement("button");
             btn.textContent = "Copy SPF Table to Excel";
+            btn.style.marginTop = '8px';
             btn.onclick = () => copySpfTableToClipboard();
-            const outDiv = document.getElementById("terminalOutput");
             outDiv.appendChild(btn);
+
+            outDiv.scrollTop = outDiv.scrollHeight;
             return;
           }
 
@@ -468,11 +496,11 @@
     function copySpfTableToClipboard() {
       if (!spfWoodData) return;
       const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
-      const headerLine = headers.join('\\t');
+      const headerLine = headers.join('\t');
       const lines = Object.values(spfWoodData).map(shapeObj => {
-        return headers.map(header => shapeObj[header] || '').join('\\t');
+        return headers.map(header => shapeObj[header] || '').join('\t');
       });
-      const text = [headerLine, ...lines].join('\\n');
+      const text = [headerLine, ...lines].join('\n');
       const textarea = document.createElement("textarea");
       textarea.value = text;
       document.body.appendChild(textarea);
