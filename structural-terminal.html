@@ -441,11 +441,35 @@
     });
 
     function showSuggestions(inputValue) {
-        if ((!wShapeLoaded && !mcShapeLoaded) || !inputValue) {
+        if ((!wShapeLoaded && !mcShapeLoaded && !spfWoodLoaded) || !inputValue) {
           suggestionsDiv.style.display = 'none';
           return;
         }
-        const allKeys = Object.keys(wShapeData).concat(Object.keys(mcShapeData));
+        
+        // Handle SPF wood suggestions
+        if (inputValue.toLowerCase().startsWith('spf')) {
+          const spfMatches = Object.keys(spfWoodData || {}).filter(key =>
+            key.toLowerCase().includes(inputValue.toLowerCase().replace('spf', '').trim())
+          );
+          
+          if (spfMatches.length) {
+            suggestionsDiv.innerHTML = spfMatches
+              .map(key => `<div style="padding:4px; cursor:pointer;">spf ${key}</div>`)
+              .join("");
+            suggestionsDiv.style.display = "block";
+
+            Array.from(suggestionsDiv.children).forEach((child, idx) => {
+              child.addEventListener("click", () => {
+                inputElem.value = `spf ${spfMatches[idx]}`;
+                suggestionsDiv.style.display = "none";
+                inputElem.focus();
+              });
+            });
+            return;
+          }
+        }
+        
+        const allKeys = Object.keys(wShapeData || {}).concat(Object.keys(mcShapeData || {}));
         const matches = allKeys.filter(key =>
           key.startsWith(inputValue.toUpperCase())
         );
