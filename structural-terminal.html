@@ -113,6 +113,9 @@
       <tr>
         <td style="padding: 2px 6px; padding-left: 20px;">&bull; spf no2</td>
       </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 20px;">&bull; lvl</td>
+      </tr>
     </table>
   </div>
 
@@ -136,9 +139,11 @@
     let wShapeData = null;
     let mcShapeData = null;
     let spfWoodData = null;
+    let lvlWoodData = null;
     let wShapeLoaded = false;
     let mcShapeLoaded = false;
     let spfWoodLoaded = false;
+    let lvlWoodLoaded = false;
 
     // Variables for Lr calculation state
     let lrState = null;       // null | "awaitingFy" | "awaitingC"
@@ -171,10 +176,10 @@
     // 3) After BOTH JSONs have loaded, enable the input:
     // ------------------------------------------------------------------------
     function tryEnableInput() {
-      if (wShapeLoaded && mcShapeLoaded && spfWoodLoaded) {
+      if (wShapeLoaded && mcShapeLoaded && spfWoodLoaded && lvlWoodLoaded) {
         const input = document.getElementById("terminalInput");
         input.disabled = false;
-        input.placeholder = "Search a shape (e.g. W12X16, spf 2x12)…";
+        input.placeholder = "Search a shape (e.g. W12X16, spf 2x12, lvl)...";
         input.focus();
 
         // Remove the initial "Loading data..." line:
@@ -258,7 +263,38 @@
       });
 
     // ------------------------------------------------------------------------
-    // 7) Handle "Enter" key presses in the input
+    // 7) Fetch LVL wood data from CSV
+    // ------------------------------------------------------------------------
+    fetch("assets/data/lvl-design-values.csv")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`LVL CSV HTTP ${resp.status}`);
+        return resp.text();
+      })
+      .then((csvText) => {
+        const lines = csvText.trim().split('\\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        lvlWoodData = []; // Use an array for LVL since names are not unique keys
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          let entry = {};
+          headers.forEach((header, index) => {
+            if(header) entry[header] = values[index];
+          });
+          lvlWoodData.push(entry);
+        }
+        
+        lvlWoodLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading LVL CSV:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load LVL wood data.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 8) Handle "Enter" key presses in the input
     // ------------------------------------------------------------------------
     document
       .getElementById("terminalInput")
@@ -398,7 +434,50 @@
             const btn = document.createElement("button");
             btn.textContent = "Copy SPF Table to Excel";
             btn.style.marginTop = '8px';
-            btn.onclick = () => copySpfTableToClipboard();
+            btn.onclick = () => copyTableToClipboard(spfWoodData, "SPF");
+            outDiv.appendChild(btn);
+
+            outDiv.scrollTop = outDiv.scrollHeight;
+            return;
+          }
+
+          // Handle "lvl" command to show the whole table
+          if (rawValue.toUpperCase() === 'LVL' && lvlWoodData) {
+            const outDiv = document.getElementById("terminalOutput");
+
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '400px';
+
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const headers = Object.keys(lvlWoodData[0]);
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.textAlign = 'left';
+                th.style.padding = '4px 8px';
+                th.style.borderBottom = '1px solid #555';
+                headerRow.appendChild(th);
+            });
+
+            const tbody = table.createTBody();
+            lvlWoodData.forEach(woodObj => {
+                const row = tbody.insertRow();
+                headers.forEach(header => {
+                    const cell = row.insertCell();
+                    cell.textContent = woodObj[header] || 'N/A';
+                    cell.style.padding = '4px 8px';
+                });
+            });
+
+            outDiv.appendChild(table);
+
+            const btn = document.createElement("button");
+            btn.textContent = "Copy LVL Table to Excel";
+            btn.style.marginTop = '8px';
+            btn.onclick = () => copyTableToClipboard(lvlWoodData, "LVL");
             outDiv.appendChild(btn);
 
             outDiv.scrollTop = outDiv.scrollHeight;
@@ -493,13 +572,18 @@
       printLine("(Copied to clipboard)", "loading");
     }
 
-    function copySpfTableToClipboard() {
-      if (!spfWoodData) return;
-      const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
+    function copyTableToClipboard(data, name) {
+      if (!data) return;
+      
+      const dataAsArray = Array.isArray(data) ? data : Object.values(data);
+      if(dataAsArray.length === 0) return;
+
+      const headers = Object.keys(dataAsArray[0]);
       const headerLine = headers.join('\t');
-      const lines = Object.values(spfWoodData).map(shapeObj => {
+      const lines = dataAsArray.map(shapeObj => {
         return headers.map(header => shapeObj[header] || '').join('\t');
       });
+
       const text = [headerLine, ...lines].join('\n');
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -507,7 +591,7 @@
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      printLine("(Copied SPF table to clipboard)", "loading");
+      printLine(`(Copied ${name} table to clipboard)`, "loading");
     }
 
     // ------------------------------------------------------------------------
@@ -536,7 +620,7 @@
     });
 
     function showSuggestions(inputValue) {
-        if ((!wShapeLoaded && !mcShapeLoaded && !spfWoodLoaded) || !inputValue) {
+        if ((!wShapeLoaded && !mcShapeLoaded && !spfWoodLoaded && !lvlWoodLoaded) || !inputValue) {
           suggestionsDiv.style.display = 'none';
           return;
         }
@@ -564,6 +648,18 @@
           }
         }
         
+        // Handle LVL wood suggestions
+        if (inputValue.toLowerCase().startsWith('lvl')) {
+          suggestionsDiv.innerHTML = `<div style="padding:4px; cursor:pointer;">lvl</div>`;
+          suggestionsDiv.style.display = "block";
+          suggestionsDiv.children[0].addEventListener("click", () => {
+            inputElem.value = 'lvl';
+            suggestionsDiv.style.display = "none";
+            inputElem.focus();
+          });
+          return;
+        }
+
         const allKeys = Object.keys(wShapeData || {}).concat(Object.keys(mcShapeData || {}));
         const matches = allKeys.filter(key =>
           key.startsWith(inputValue.toUpperCase())
