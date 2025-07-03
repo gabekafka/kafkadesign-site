@@ -92,6 +92,10 @@
         <td style="padding: 2px 6px;"><code>spf 2x12</code></td>
         <td style="padding: 2px 6px;">SPF wood V, M values</td>
       </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>vals</code></td>
+        <td style="padding: 2px 6px;">Calculate V, M, EI values</td>
+      </tr>
     </table>
 
     <table style="margin-top:8px; border-collapse: collapse; width: 100%; color: #aaaaaa; font-size: 0.9rem;">
@@ -155,6 +159,12 @@
     let lpState = null;       // null or "awaitingFyLP"
     let lpShapeObj = null;
     const lpE = 29000;        // default E (ksi) for LP
+
+    // Variables for Vals calculation state
+    let valsState = null;     // null | "awaitingW" | "awaitingL" | "awaitingDeflection"
+    let valsW = null;
+    let valsL = null;
+    let valsDeflection = null;
 
     // ------------------------------------------------------------------------
     // 2) Utility: print a new line of text into #terminalOutput
@@ -328,6 +338,61 @@
             return;
           }
           // ----- End Lp state machine -----
+
+          // ----- Vals state machine -----
+          // If waiting for w (load per foot):
+          if (valsState === "awaitingW") {
+            const wVal = parseFloat(rawValue);
+            if (isNaN(wVal) || wVal <= 0) {
+              printLine("❌ Please enter a valid numeric w (load per foot).", "error");
+              return;
+            }
+            valsW = wVal;
+            valsState = "awaitingL";
+            document.getElementById("interactivePrompt").innerText = "Enter L (span length in feet):";
+            return;
+          }
+
+          // If waiting for L (span length):
+          if (valsState === "awaitingL") {
+            const lVal = parseFloat(rawValue);
+            if (isNaN(lVal) || lVal <= 0) {
+              printLine("❌ Please enter a valid numeric L (span length in feet).", "error");
+              return;
+            }
+            valsL = lVal;
+            valsState = "awaitingDeflection";
+            document.getElementById("interactivePrompt").innerText = "Enter max deflection (inches):";
+            return;
+          }
+
+          // If waiting for max deflection:
+          if (valsState === "awaitingDeflection") {
+            const deflectionVal = parseFloat(rawValue);
+            if (isNaN(deflectionVal) || deflectionVal <= 0) {
+              printLine("❌ Please enter a valid numeric max deflection (inches).", "error");
+              return;
+            }
+            valsDeflection = deflectionVal;
+            
+            // Calculate V, M, and EI
+            const V = valsW * valsL / 2;
+            const M = (valsW * Math.pow(valsL, 2)) / 8;
+            const EI = (384 * (valsW / 12) * Math.pow(valsL * 12, 4)) / (5 * valsDeflection);
+            
+            printLine(`V = ${V.toFixed(2)} lbs`);
+            printLine(`M = ${M.toFixed(2)} ft-lbs`);
+            printLine(`EI = ${EI.toFixed(0)} (10^6)`);
+            
+            // Clear prompt and reset vals state
+            document.getElementById("interactivePrompt").innerText = "";
+            valsState = null;
+            valsW = null;
+            valsL = null;
+            valsDeflection = null;
+            return;
+          }
+          // ----- End Vals state machine -----
 
           // ----- Lr state machine -----
           // If we're waiting for Fy, parse it now:
@@ -515,6 +580,13 @@
             document.getElementById("interactivePrompt").innerText = "";
             printLine(`E (ksi) default = ${lpE}`);
             document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
+            return;
+          }
+
+          // Detect "vals" command to start V, M, EI calculation flow:
+          if (rawValue.toUpperCase() === 'VALS') {
+            valsState = "awaitingW";
+            document.getElementById("interactivePrompt").innerText = "Enter w (load per foot in lbs/ft):";
             return;
           }
 
