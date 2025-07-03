@@ -379,10 +379,23 @@
             const V = valsW * valsL / 2;
             const M = (valsW * Math.pow(valsL, 2)) / 8;
             const EI = (384 * (valsW / 12) * Math.pow(valsL * 12, 4)) / (5 * valsDeflection);
+            const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
             
             printLine(`V = ${V.toFixed(2)} lbs`);
             printLine(`M = ${M.toFixed(2)} ft-lbs`);
-            printLine(`EI = ${EI.toFixed(0)} (10^6)`);
+            printLine(`EI = ${EI_formatted} (10^6)`);
+            
+            // Add Copy to Excel button for V, M, EI results
+            const valsObj = {
+              "V (lbs)": V.toFixed(2),
+              "M (ft-lbs)": M.toFixed(2),
+              "EI (10^6)": EI_formatted
+            };
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(valsObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
             
             // Clear prompt and reset vals state
             document.getElementById("interactivePrompt").innerText = "";
