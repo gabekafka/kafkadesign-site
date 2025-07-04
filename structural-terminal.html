@@ -164,8 +164,9 @@
     const lpE = 29000;        // default E (ksi) for LP
 
     // Variables for Vals calculation state
-    let valsState = null;     // null | "awaitingW" | "awaitingL" | "awaitingDeflection"
+    let valsState = null;     // null | "awaitingW" | "awaitingWLL" | "awaitingL" | "awaitingDeflection"
     let valsW = null;
+    let valsWLL = null;
     let valsL = null;
     let valsDeflection = null;
 
@@ -343,14 +344,27 @@
           // ----- End Lp state machine -----
 
           // ----- Vals state machine -----
-          // If waiting for w (distributed load in plf):
+          // If waiting for w (total distributed load in plf):
           if (valsState === "awaitingW") {
             const wVal = parseFloat(rawValue);
             if (isNaN(wVal) || wVal <= 0) {
-              printLine("❌ Please enter a valid numeric w (distributed load in plf).", "error");
+              printLine("❌ Please enter a valid numeric w (total distributed load in plf).", "error");
               return;
             }
             valsW = wVal;
+            valsState = "awaitingWLL";
+            document.getElementById("interactivePrompt").innerText = "Enter w_LL (distributed live load in plf):";
+            return;
+          }
+
+          // If waiting for w_LL (distributed live load in plf):
+          if (valsState === "awaitingWLL") {
+            const wllVal = parseFloat(rawValue);
+            if (isNaN(wllVal) || wllVal <= 0) {
+              printLine("❌ Please enter a valid numeric w_LL (distributed live load in plf).", "error");
+              return;
+            }
+            valsWLL = wllVal;
             valsState = "awaitingL";
             document.getElementById("interactivePrompt").innerText = "Enter L (length in feet):";
             return;
@@ -378,14 +392,14 @@
             }
             valsDeflection = deflectionVal;
             
-            // Calculate V, M, and EI
+            // Calculate V, M using total w, EI using w_LL
             const V = valsW * valsL / 2;
             const M = (valsW * Math.pow(valsL, 2)) / 8;
-            // Convert units for EI calculation
-            const w_in = valsW / 12; // plf to lb/in
+            // Convert units for EI calculation (use w_LL)
+            const wll_in = valsWLL / 12; // plf to lb/in
             const L_in = valsL * 12; // ft to in
-            // EI = (5 * w * L^4) / (384 * delta), all in inches and lb/in
-            const EI = (5 * w_in * Math.pow(L_in, 4)) / (384 * valsDeflection);
+            // EI = (5 * w_LL * L^4) / (384 * delta), all in inches and lb/in
+            const EI = (5 * wll_in * Math.pow(L_in, 4)) / (384 * valsDeflection);
             const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
 
             // Create a table for V, M, EI
@@ -425,11 +439,6 @@
             outDiv.appendChild(table);
 
             // Add Copy to Excel button for V, M, EI results
-            const valsObj = {
-              "V": V.toFixed(2),
-              "M": M.toFixed(2),
-              "EI": EI_formatted
-            };
             const btn = document.createElement("button");
             btn.textContent = "Copy to Excel";
             btn.onclick = () => {
@@ -454,6 +463,7 @@
             document.getElementById("interactivePrompt").innerText = "";
             valsState = null;
             valsW = null;
+            valsWLL = null;
             valsL = null;
             valsDeflection = null;
             return;
@@ -652,7 +662,7 @@
           // Detect "vals" command to start V, M, EI calculation flow:
           if (rawValue.toUpperCase() === 'VALS') {
             valsState = "awaitingW";
-            document.getElementById("interactivePrompt").innerText = "Enter w (distributed load in plf):";
+            document.getElementById("interactivePrompt").innerText = "Enter w (total distributed load in plf):";
             return;
           }
 
