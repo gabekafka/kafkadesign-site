@@ -378,29 +378,78 @@
             }
             valsDeflection = deflectionVal;
             
+            // Calculate V, M, and EI
+            const V = valsW * valsL / 2;
+            const M = (valsW * Math.pow(valsL, 2)) / 8;
             // Convert units for EI calculation
             const w_in = valsW / 12; // plf to lb/in
             const L_in = valsL * 12; // ft to in
             // EI = (5 * w * L^4) / (384 * delta), all in inches and lb/in
             const EI = (5 * w_in * Math.pow(L_in, 4)) / (384 * valsDeflection);
             const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
-            
-            printLine(`V = ${V.toFixed(2)} lbs`);
-            printLine(`M = ${M.toFixed(2)} ft-lbs`);
-            printLine(`EI = ${EI_formatted} (10^6)`);
-            
+
+            // Create a table for V, M, EI
+            const outDiv = document.getElementById("terminalOutput");
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '320px';
+
+            // Table header
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            ["Variable", "Value", "Units"].forEach(text => {
+              const th = document.createElement('th');
+              th.textContent = text;
+              th.style.textAlign = 'left';
+              th.style.padding = '4px 8px';
+              th.style.borderBottom = '1px solid #555';
+              headerRow.appendChild(th);
+            });
+
+            // Table body
+            const tbody = table.createTBody();
+            const rows = [
+              ["V", V.toFixed(2), "lbs"],
+              ["M", M.toFixed(2), "ft-lbs"],
+              ["EI", EI_formatted, "(10^6) in-lb²"]
+            ];
+            rows.forEach(rowVals => {
+              const row = tbody.insertRow();
+              rowVals.forEach(val => {
+                const cell = row.insertCell();
+                cell.textContent = val;
+                cell.style.padding = '4px 8px';
+              });
+            });
+            outDiv.appendChild(table);
+
             // Add Copy to Excel button for V, M, EI results
             const valsObj = {
-              "V (lbs)": V.toFixed(2),
-              "M (ft-lbs)": M.toFixed(2),
-              "EI (10^6)": EI_formatted
+              "V": V.toFixed(2),
+              "M": M.toFixed(2),
+              "EI": EI_formatted
             };
             const btn = document.createElement("button");
             btn.textContent = "Copy to Excel";
-            btn.onclick = () => copyLastShapeToClipboard(valsObj);
-            const outDiv = document.getElementById("terminalOutput");
+            btn.onclick = () => {
+              const header = "Variable\tValue\tUnits";
+              const lines = [
+                `V\t${V.toFixed(2)}\tlbs`,
+                `M\t${M.toFixed(2)}\tft-lbs`,
+                `EI\t${EI_formatted}\t(10^6) in-lb²`
+              ];
+              const text = [header, ...lines].join("\n");
+              const textarea = document.createElement("textarea");
+              textarea.value = text;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textarea);
+              printLine("(Copied to clipboard)", "loading");
+            };
             outDiv.appendChild(btn);
-            
+
             // Clear prompt and reset vals state
             document.getElementById("interactivePrompt").innerText = "";
             valsState = null;
