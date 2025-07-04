@@ -381,9 +381,9 @@
             // Convert units for EI calculation
             const w_in = valsW / 12; // plf to lb/in
             const L_in = valsL * 12; // ft to in
-            // EI = (384 * w * L^4) / (5 * delta), all in inches and lb/in
+            // EI = (5 * w * L^4) / (384 * delta), all in inches and lb/in
             printLine(`(w = ${w_in.toFixed(3)} lb/in, L = ${L_in.toFixed(2)} in, delta = ${valsDeflection.toFixed(3)} in)`);
-            const EI = (384 * w_in * Math.pow(L_in, 4)) / (5 * valsDeflection);
+            const EI = (5 * w_in * Math.pow(L_in, 4)) / (384 * valsDeflection);
             const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
             
             printLine(`V = ${V.toFixed(2)} lbs`);
