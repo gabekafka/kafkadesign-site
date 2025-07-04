@@ -381,7 +381,11 @@
             // Calculate V, M, and EI
             const V = valsW * valsL / 2;
             const M = (valsW * Math.pow(valsL, 2)) / 8;
-            const EI = (384 * valsW * Math.pow(valsL, 4) * Math.pow(12, 3)) / (5 * valsDeflection);
+            // Convert units for EI calculation
+            const w_in = valsW / 12; // plf to lb/in
+            const L_in = valsL * 12; // ft to in
+            // EI = (384 * w * L^4) / (5 * delta), all in inches and lb/in
+            const EI = (384 * w_in * Math.pow(L_in, 4)) / (5 * valsDeflection);
             const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
             
             printLine(`V = ${V.toFixed(2)} lbs`);
