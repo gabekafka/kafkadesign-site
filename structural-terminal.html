@@ -412,7 +412,7 @@
             const rows = [
               ["V", V.toFixed(2), "lbs"],
               ["M", M.toFixed(2), "ft-lbs"],
-              ["EI", EI_formatted, "(10^6) in-lb²"]
+              ["EI", EI_formatted, "(10^6) in-lb2"]
             ];
             rows.forEach(rowVals => {
               const row = tbody.insertRow();
@@ -437,7 +437,7 @@
               const lines = [
                 `V\t${V.toFixed(2)}\tlbs`,
                 `M\t${M.toFixed(2)}\tft-lbs`,
-                `EI\t${EI_formatted}\t(10^6) in-lb²`
+                `EI\t${EI_formatted}\t(10^6) in-lb2`
               ];
               const text = [header, ...lines].join("\n");
               const textarea = document.createElement("textarea");
