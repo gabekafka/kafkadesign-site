@@ -343,16 +343,16 @@
           // ----- End Lp state machine -----
 
           // ----- Vals state machine -----
-          // If waiting for w (load per foot):
+          // If waiting for w (distributed load in plf):
           if (valsState === "awaitingW") {
             const wVal = parseFloat(rawValue);
             if (isNaN(wVal) || wVal <= 0) {
-              printLine("❌ Please enter a valid numeric w (load per foot).", "error");
+              printLine("❌ Please enter a valid numeric w (distributed load in plf).", "error");
               return;
             }
             valsW = wVal;
             valsState = "awaitingL";
-            document.getElementById("interactivePrompt").innerText = "Enter L (span length in feet):";
+            document.getElementById("interactivePrompt").innerText = "Enter L (length in feet):";
             return;
           }
 
@@ -360,12 +360,12 @@
           if (valsState === "awaitingL") {
             const lVal = parseFloat(rawValue);
             if (isNaN(lVal) || lVal <= 0) {
-              printLine("❌ Please enter a valid numeric L (span length in feet).", "error");
+              printLine("❌ Please enter a valid numeric L (length in feet).", "error");
               return;
             }
             valsL = lVal;
             valsState = "awaitingDeflection";
-            document.getElementById("interactivePrompt").innerText = "Enter max deflection (inches):";
+            document.getElementById("interactivePrompt").innerText = "Enter max deflection, delta (inches):";
             return;
           }
 
@@ -373,7 +373,7 @@
           if (valsState === "awaitingDeflection") {
             const deflectionVal = parseFloat(rawValue);
             if (isNaN(deflectionVal) || deflectionVal <= 0) {
-              printLine("❌ Please enter a valid numeric max deflection (inches).", "error");
+              printLine("❌ Please enter a valid numeric max deflection, delta (inches).", "error");
               return;
             }
             valsDeflection = deflectionVal;
@@ -602,7 +602,7 @@
           // Detect "vals" command to start V, M, EI calculation flow:
           if (rawValue.toUpperCase() === 'VALS') {
             valsState = "awaitingW";
-            document.getElementById("interactivePrompt").innerText = "Enter w (load per foot in lbs/ft):";
+            document.getElementById("interactivePrompt").innerText = "Enter w (distributed load in plf):";
             return;
           }
 
