@@ -381,7 +381,7 @@
             // Calculate V, M, and EI
             const V = valsW * valsL / 2;
             const M = (valsW * Math.pow(valsL, 2)) / 8;
-            const EI = (384 * (valsW / 12) * Math.pow(valsL * 12, 4)) / (5 * valsDeflection);
+            const EI = (384 * valsW * Math.pow(valsL, 4) * Math.pow(12, 3)) / (5 * valsDeflection);
             const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
             
             printLine(`V = ${V.toFixed(2)} lbs`);
