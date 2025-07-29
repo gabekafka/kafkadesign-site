@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structural Analysis - Kafka Design</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .input-group {
+      margin: 15px 0;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .results {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    .beam-diagram {
+      margin: 20px 0;
+      font-family: monospace;
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+    }
+    #plotlyDiv {
+      width: 100%;
+      height: 600px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Structural Beam Analysis</h1>
+    <p>Analyze simply supported beams with point loads and distributed loads</p>
+    
+    <div class="input-group">
+      <label for="beamLength">Beam Length (ft):</label>
+      <input type="number" id="beamLength" value="20" step="0.1" min="0.1">
+    </div>
+
+    <h3>Point Loads</h3>
+    <div id="pointLoads">
+      <div class="point-load-group">
+        <label>Location (ft): <input type="number" class="point-location" value="10" step="0.1" min="0"></label>
+        <label>Load (kips): <input type="number" class="point-magnitude" value="5" step="0.1"></label>
+        <button type="button" class="button" onclick="removePointLoad(this)">Remove</button>
+      </div>
+    </div>
+    <button type="button" class="button" onclick="addPointLoad()">Add Point Load</button>
+
+    <h3>Distributed Loads</h3>
+    <div id="distributedLoads">
+      <div class="distributed-load-group">
+        <label>Start (ft): <input type="number" class="dist-start" value="2" step="0.1" min="0"></label>
+        <label>End (ft): <input type="number" class="dist-end" value="8" step="0.1" min="0"></label>
+        <label>Load (kips/ft): <input type="number" class="dist-magnitude" value="1" step="0.1"></label>
+        <button type="button" class="button" onclick="removeDistributedLoad(this)">Remove</button>
+      </div>
+    </div>
+    <button type="button" class="button" onclick="addDistributedLoad()">Add Distributed Load</button>
+
+    <br><br>
+    <button type="button" class="button" onclick="analyzeBeam()" style="background-color: #28a745; font-size: 16px; padding: 15px 30px;">Analyze Beam</button>
+
+    <div id="results" class="results" style="display: none;">
+      <h3>Results</h3>
+      <div id="beamRepresentation" class="beam-diagram"></div>
+      <div id="calculationResults"></div>
+      <div id="plotlyDiv"></div>
+    </div>
+
+    <br>
+    <a href="index.html">← Back to Home</a>
+  </div>
+
+  <script>
+    function addPointLoad() {
+      const container = document.getElementById('pointLoads');
+      const div = document.createElement('div');
+      div.className = 'point-load-group';
+      div.innerHTML = `
+        <label>Location (ft): <input type="number" class="point-location" value="0" step="0.1" min="0"></label>
+        <label>Load (kips): <input type="number" class="point-magnitude" value="1" step="0.1"></label>
+        <button type="button" class="button" onclick="removePointLoad(this)">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removePointLoad(button) {
+      button.parentElement.remove();
+    }
+
+    function addDistributedLoad() {
+      const container = document.getElementById('distributedLoads');
+      const div = document.createElement('div');
+      div.className = 'distributed-load-group';
+      div.innerHTML = `
+        <label>Start (ft): <input type="number" class="dist-start" value="0" step="0.1" min="0"></label>
+        <label>End (ft): <input type="number" class="dist-end" value="1" step="0.1" min="0"></label>
+        <label>Load (kips/ft): <input type="number" class="dist-magnitude" value="1" step="0.1"></label>
+        <button type="button" class="button" onclick="removeDistributedLoad(this)">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeDistributedLoad(button) {
+      button.parentElement.remove();
+    }
+
+    function analyzeBeam() {
+      // Get input values
+      const beamLength = parseFloat(document.getElementById('beamLength').value);
+      
+      // Get point loads
+      const pointLoads = [];
+      document.querySelectorAll('.point-load-group').forEach(group => {
+        const location = parseFloat(group.querySelector('.point-location').value);
+        const magnitude = parseFloat(group.querySelector('.point-magnitude').value);
+        if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength) {
+          pointLoads.push({location, magnitude: magnitude * 1000}); // Convert to pounds
+        }
+      });
+
+      // Get distributed loads
+      const distributedLoads = [];
+      document.querySelectorAll('.distributed-load-group').forEach(group => {
+        const start = parseFloat(group.querySelector('.dist-start').value);
+        const end = parseFloat(group.querySelector('.dist-end').value);
+        const magnitude = parseFloat(group.querySelector('.dist-magnitude').value);
+        if (!isNaN(start) && !isNaN(end) && !isNaN(magnitude) && start < end && end <= beamLength) {
+          distributedLoads.push({start, end, magnitude: magnitude * 1000}); // Convert to pounds/ft
+        }
+      });
+
+      // Sort loads
+      pointLoads.sort((a, b) => a.location - b.location);
+      distributedLoads.sort((a, b) => a.start - b.start);
+
+      // Calculate reactions
+      let R_left = 0, R_right = 0;
+
+      // Point load contributions
+      pointLoads.forEach(load => {
+        R_left += load.magnitude * (beamLength - load.location) / beamLength;
+        R_right += load.magnitude * load.location / beamLength;
+      });
+
+      // Distributed load contributions
+      distributedLoads.forEach(load => {
+        const length = load.end - load.start;
+        const centroid = (load.start + load.end) / 2;
+        const totalLoad = load.magnitude * length;
+        R_left += totalLoad * (beamLength - centroid) / beamLength;
+        R_right += totalLoad * centroid / beamLength;
+      });
+
+      const Vu = Math.max(R_left, R_right) / 1000; // in kips
+
+      // Generate arrays for plotting
+      const numPoints = 1000;
+      const x = [];
+      const V = [];
+      const M = [];
+
+      for (let i = 0; i < numPoints; i++) {
+        const x_val = (i / (numPoints - 1)) * beamLength;
+        x.push(x_val);
+
+        // Calculate shear at this point
+        let V_val = R_left / 1000; // Start with left reaction
+
+        // Subtract point loads to the left
+        pointLoads.forEach(load => {
+          if (x_val > load.location) {
+            V_val -= load.magnitude / 1000;
+          }
+        });
+
+        // Subtract distributed loads
+        distributedLoads.forEach(load => {
+          if (x_val >= load.start && x_val <= load.end) {
+            V_val -= (load.magnitude * (x_val - load.start)) / 1000;
+          } else if (x_val > load.end) {
+            V_val -= (load.magnitude * (load.end - load.start)) / 1000;
+          }
+        });
+
+        V.push(V_val);
+
+        // Calculate moment (integrate shear)
+        let M_val = 0;
+        if (i > 0) {
+          const dx = x[i] - x[i-1];
+          M_val = M[i-1] + V[i-1] * dx;
+        }
+        M.push(M_val);
+      }
+
+      const Mu = Math.max(...M.map(Math.abs));
+
+      // Display results
+      displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M);
+    }
+
+    function displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M) {
+      // Show results section
+      document.getElementById('results').style.display = 'block';
+
+      // Create beam representation
+      let beamRep = 'Simply Supported Beam:\n';
+      beamRep += 'A' + '-'.repeat(Math.floor(beamLength)) + 'B\n';
+      
+      pointLoads.forEach(load => {
+        const pos = Math.floor(load.location);
+        beamRep += ' '.repeat(pos) + `↓ Pu = ${(load.magnitude/1000).toFixed(2)} kips\n`;
+      });
+
+      distributedLoads.forEach(load => {
+        const startPos = Math.floor(load.start);
+        const length = Math.floor(load.end - load.start);
+        beamRep += ' '.repeat(startPos) + '='.repeat(length) + ` w = ${(load.magnitude/1000).toFixed(2)} kips/ft\n`;
+      });
+
+      document.getElementById('beamRepresentation').textContent = beamRep;
+
+      // Display calculation results
+      document.getElementById('calculationResults').innerHTML = `
+        <strong>Ultimate Moment Mu:</strong> ${Mu.toFixed(2)} kip-ft<br>
+        <strong>Ultimate Shear Vu:</strong> ${Vu.toFixed(2)} kips
+      `;
+
+      // Create Plotly diagram
+      const trace1 = {
+        x: x,
+        y: V,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Shear (kips)',
+        line: {color: 'blue'}
+      };
+
+      const trace2 = {
+        x: x,
+        y: M,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Moment (kip-ft)',
+        line: {color: 'green'},
+        yaxis: 'y2'
+      };
+
+      const layout = {
+        title: 'Beam Analysis - Shear and Moment Diagrams',
+        xaxis: {title: 'Position along beam (ft)'},
+        yaxis: {title: 'Shear (kips)', side: 'left'},
+        yaxis2: {title: 'Moment (kip-ft)', side: 'right', overlaying: 'y'},
+        height: 600
+      };
+
+      Plotly.newPlot('plotlyDiv', [trace1, trace2], layout);
+    }
+
+    // Run initial analysis with default values
+    window.onload = function() {
+      analyzeBeam();
+    };
+  </script>
+</body>
+</html> 
