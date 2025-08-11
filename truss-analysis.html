@@ -31,7 +31,7 @@
         </p>
     </div>
     <div id="viz-container"></div>
-    <div id="note">Edit nodes/members in the sheet to update the truss</div>
+    <div id="note">Edit nodes/members in the sheet to update the truss. Pan the canvas to explore.</div>
 
     <script>
         const API_KEY = 'AIzaSyBQA4vNouNg8_h_nYUNwonBzdiABmSpjP8'; // Your Google Sheets API key
@@ -95,7 +95,8 @@
                     stage = new Konva.Stage({
                         container: 'viz-container',
                         width: window.innerWidth / 2,
-                        height: window.innerHeight
+                        height: window.innerHeight,
+                        draggable: true // Enable panning by dragging the stage
                     });
                 } else {
                     stage.destroyChildren();
