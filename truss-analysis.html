@@ -15,56 +15,41 @@
 </head>
 <body>
     <div id="sheet-container">
-        <div id="sheet-placeholder" style="display: flex; flex-direction: column; height: 100%; justify-content: center; align-items: center; background: #f8f9fa; border: 2px dashed #dee2e6;">
-            <h3>Google Sheet Integration</h3>
-            <p>To display your spreadsheet here:</p>
+        <iframe id="sheet-iframe" src="https://docs.google.com/spreadsheets/d/1ZSJXEtnPFiNdi3lygKtfm_M5f2gKoNH43pdAfid_7Jc/edit?rm=embedded" width="100%" height="100%" frameborder="0" style="display: block;"></iframe>
+        <div id="sheet-placeholder" style="display: none; flex-direction: column; height: 100%; justify-content: center; align-items: center; background: #f8f9fa; border: 2px dashed #dee2e6; position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
+            <h3>Google Sheet Access Required</h3>
+            <p>Please sign in with a Google account to view and edit the sheet:</p>
             <ol style="text-align: left; max-width: 400px;">
-                <li>Create a Google Sheet with "Nodes" and "Members" sheets</li>
-                <li>Replace YOUR_SHEET_ID in the code with your actual sheet ID</li>
-                <li>Replace YOUR_API_KEY with your Google Sheets API key</li>
-                <li>Make your sheet publicly accessible</li>
+                <li>Click the sign-in prompt in the iframe</li>
+                <li>Ensure the sheet is shared with "Anyone with the link can edit"</li>
+                <li>Refresh the page if issues persist</li>
             </ol>
-            <p><strong>Current Status:</strong> <span id="status">Not configured</span></p>
+            <p><strong>Current Status:</strong> <span id="status">Loading...</span></p>
         </div>
         <p style="text-align: center; margin-top: 10px;">
-            <a href="#" id="edit-link" target="_blank" style="display: none;">Edit Sheet</a>
+            <a href="https://docs.google.com/spreadsheets/d/1ZSJXEtnPFiNdi3lygKtfm_M5f2gKoNH43pdAfid_7Jc/edit" id="edit-link" target="_blank">Open Sheet in New Tab</a>
         </p>
     </div>
     <div id="viz-container"></div>
     <div id="note">Edit nodes/members in the sheet to update the truss</div>
 
     <script>
-        // Replace these with your actual values
         const API_KEY = 'AIzaSyBQA4vNouNg8_h_nYUNwonBzdiABmSpjP8'; // Your Google Sheets API key
         const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
         const SHEET_ID = '1ZSJXEtnPFiNdi3lygKtfm_M5f2gKoNH43pdAfid_7Jc'; // Your actual sheet ID
-        
         let stage;
-        let isConfigured = false;
-
-        // Check if configuration is complete
-        function checkConfiguration() {
-            if (API_KEY !== 'YOUR_API_KEY' && SHEET_ID !== 'YOUR_SHEET_ID') {
-                isConfigured = true;
-                document.getElementById('sheet-placeholder').style.display = 'none';
-                document.getElementById('edit-link').style.display = 'inline';
-                document.getElementById('edit-link').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
-                document.getElementById('status').textContent = 'Configured - Loading...';
-                initGapi();
-            } else {
-                document.getElementById('status').textContent = 'Not configured - Replace placeholders in code';
-            }
-        }
 
         async function initGapi() {
             try {
                 await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
                 document.getElementById('status').textContent = 'Connected - Updating visualization';
                 updateViz();
-                setInterval(updateViz, 5000); // Poll every 5s for updates
+                setInterval(updateViz, 5000); // Poll every 5s
             } catch (error) {
-                console.error('Error initializing GAPI:', error);
-                document.getElementById('status').textContent = 'Error connecting to Google Sheets';
+                console.error('GAPI Init Error:', error);
+                document.getElementById('status').textContent = 'Error: Check API key and internet connection';
+                document.getElementById('sheet-placeholder').style.display = 'flex';
+                document.getElementById('sheet-iframe').style.display = 'none';
             }
         }
 
@@ -79,21 +64,32 @@
                     spreadsheetId: SHEET_ID,
                     range: 'Nodes!A1:C100'
                 });
-                const nodes = nodesResponse.result.values.slice(1).map(row => ({
-                    id: row[0],
-                    x: parseFloat(row[1]) * 20,
-                    y: parseFloat(row[2]) * 20
-                }));
+                let nodes = [];
+                if (nodesResponse.result.values && nodesResponse.result.values.length > 1) {
+                    nodes = nodesResponse.result.values.slice(1).map(row => ({
+                        id: row[0], // e.g., N1, N2
+                        x: parseFloat(row[1]) * 20 || 0,
+                        y: parseFloat(row[2]) * 20 || 0
+                    }));
+                } else {
+                    throw new Error('No node data found in sheet');
+                }
 
                 // Fetch members
                 const membersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SHEET_ID,
                     range: 'Members!A1:C100'
                 });
-                const members = membersResponse.result.values.slice(1).map(row => ({
-                    from: row[1],
-                    to: row[2]
-                }));
+                let members = [];
+                if (membersResponse.result.values && membersResponse.result.values.length > 1) {
+                    members = membersResponse.result.values.slice(1).map(row => ({
+                        id: row[0], // e.g., M1, M2
+                        from: row[1], // e.g., N1
+                        to: row[2]   // e.g., N2
+                    }));
+                } else {
+                    throw new Error('No member data found in sheet');
+                }
 
                 if (!stage) {
                     stage = new Konva.Stage({
@@ -107,44 +103,70 @@
                 const layer = new Konva.Layer();
                 stage.add(layer);
 
-                members.forEach(member => {
-                    const fromNode = nodes.find(n => n.id === member.from);
-                    const toNode = nodes.find(n => n.id === member.to);
-                    if (fromNode && toNode) {
-                        layer.add(new Konva.Line({
-                            points: [fromNode.x, fromNode.y, toNode.x, toNode.y],
-                            stroke: '#333',
-                            strokeWidth: 2
-                        }));
-                    }
-                });
-
-                nodes.forEach(node => {
-                    layer.add(new Konva.Circle({
-                        x: node.x,
-                        y: node.y,
-                        radius: 5,
-                        fill: '#1e90ff'
-                    }));
+                if (nodes.length === 0 || members.length === 0) {
                     layer.add(new Konva.Text({
-                        x: node.x + 5,
-                        y: node.y,
-                        text: node.id,
-                        fontSize: 12,
+                        x: 50,
+                        y: 50,
+                        text: 'No data to display. Add nodes (N1, N2...) and members (M1, M2...) to the sheet.',
+                        fontSize: 16,
                         fill: '#333'
                     }));
-                });
+                } else {
+                    members.forEach(member => {
+                        const fromNode = nodes.find(n => n.id === member.from);
+                        const toNode = nodes.find(n => n.id === member.to);
+                        if (fromNode && toNode) {
+                            layer.add(new Konva.Line({
+                                points: [fromNode.x, fromNode.y, toNode.x, toNode.y],
+                                stroke: '#333',
+                                strokeWidth: 2
+                            }));
+                            layer.add(new Konva.Text({
+                                x: (fromNode.x + toNode.x) / 2 + 5,
+                                y: (fromNode.y + toNode.y) / 2,
+                                text: member.id, // Display M1, M2, etc.
+                                fontSize: 12,
+                                fill: '#333'
+                            }));
+                        }
+                    });
+
+                    nodes.forEach(node => {
+                        layer.add(new Konva.Circle({
+                            x: node.x,
+                            y: node.y,
+                            radius: 5,
+                            fill: '#1e90ff'
+                        }));
+                        layer.add(new Konva.Text({
+                            x: node.x + 5,
+                            y: node.y,
+                            text: node.id, // Display N1, N2, etc.
+                            fontSize: 12,
+                            fill: '#333'
+                        }));
+                    });
+                }
 
                 layer.draw();
             } catch (error) {
                 console.error('Error updating viz:', error);
-                document.getElementById('status').textContent = 'Error updating visualization';
+                document.getElementById('status').textContent = 'Error: Check sheet data or API access';
             }
         }
 
-        // Initialize when page loads
-        checkConfiguration();
         gapiLoaded();
+
+        // Check iframe load status
+        document.getElementById('sheet-iframe').onload = function() {
+            const iframeDoc = document.getElementById('sheet-iframe').contentDocument || document.getElementById('sheet-iframe').contentWindow.document;
+            if (iframeDoc && iframeDoc.body.innerHTML.includes('Sign in')) {
+                document.getElementById('sheet-placeholder').style.display = 'flex';
+                document.getElementById('status').textContent = 'Please sign in to Google';
+            } else {
+                document.getElementById('sheet-placeholder').style.display = 'none';
+            }
+        };
     </script>
 </body>
 </html>
