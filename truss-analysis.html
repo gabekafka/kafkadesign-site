@@ -31,7 +31,7 @@
         </p>
     </div>
     <div id="viz-container"></div>
-    <div id="note">Edit nodes/members in the sheet to update the truss. Pan the canvas to explore.</div>
+    <div id="note">Edit nodes/members in the sheet to update the truss. Pan the canvas to explore. Use 'yes' in column D to pin a node.</div>
 
     <script>
         const API_KEY = 'AIzaSyBQA4vNouNg8_h_nYUNwonBzdiABmSpjP8'; // Your Google Sheets API key
@@ -62,14 +62,15 @@
                 // Fetch nodes
                 const nodesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SHEET_ID,
-                    range: 'Nodes!A1:C100'
+                    range: 'Nodes!A1:D100' // Updated to include column D for pinning
                 });
                 let nodes = [];
                 if (nodesResponse.result.values && nodesResponse.result.values.length > 1) {
                     nodes = nodesResponse.result.values.slice(1).map(row => ({
                         id: row[0], // e.g., N1, N2
                         x: parseFloat(row[1]) * 20 || 0,
-                        y: parseFloat(row[2]) * 20 || 0
+                        y: parseFloat(row[2]) * 20 || 0,
+                        pinned: row[3] && row[3].toLowerCase() === 'yes' // Check if pinned
                     }));
                 } else {
                     throw new Error('No node data found in sheet');
@@ -96,7 +97,7 @@
                         container: 'viz-container',
                         width: window.innerWidth / 2,
                         height: window.innerHeight,
-                        draggable: true // Enable panning by dragging the stage
+                        draggable: true // Enable panning
                     });
                 } else {
                     stage.destroyChildren();
@@ -137,7 +138,7 @@
                             x: node.x,
                             y: node.y,
                             radius: 5,
-                            fill: '#1e90ff'
+                            fill: node.pinned ? '#ff0000' : '#1e90ff' // Red for pinned, blue for free
                         }));
                         layer.add(new Konva.Text({
                             x: node.x + 5,
