@@ -15,7 +15,8 @@
 </head>
 <body>
     <div id="sheet-container">
-        <iframe src="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?rm=embedded" width="100%" height="100%" frameborder="0"></iframe>
+        <iframe src="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/pubhtml" width="100%" height="100%" frameborder="0"></iframe>
+        <p style="text-align: center;"><a href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" target="_blank">Edit Sheet</a></p>
     </div>
     <div id="viz-container"></div>
     <div id="note">Edit nodes/members in the sheet to update the truss</div>
@@ -45,7 +46,7 @@
                 });
                 const nodes = nodesResponse.result.values.slice(1).map(row => ({
                     id: row[0],
-                    x: parseFloat(row[1]) * 20, // Scale coords for viz
+                    x: parseFloat(row[1]) * 20,
                     y: parseFloat(row[2]) * 20
                 }));
 
@@ -59,7 +60,6 @@
                     to: row[2]
                 }));
 
-                // Initialize or clear canvas
                 if (!stage) {
                     stage = new Konva.Stage({
                         container: 'viz-container',
@@ -67,12 +67,11 @@
                         height: window.innerHeight
                     });
                 } else {
-                    stage.destroyChildren(); // Clear previous layers
+                    stage.destroyChildren();
                 }
                 const layer = new Konva.Layer();
                 stage.add(layer);
 
-                // Draw members (lines)
                 members.forEach(member => {
                     const fromNode = nodes.find(n => n.id === member.from);
                     const toNode = nodes.find(n => n.id === member.to);
@@ -85,7 +84,6 @@
                     }
                 });
 
-                // Draw nodes (circles)
                 nodes.forEach(node => {
                     layer.add(new Konva.Circle({
                         x: node.x,
